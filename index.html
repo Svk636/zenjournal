@@ -7,10 +7,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ZenJournal">
+<link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='36' fill='%230a0a0f'/%3E%3Ctext y='132' x='14' font-size='115' font-family='monospace' fill='%237c6dfa'%3ETJ%3C/text%3E%3C/svg%3E">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Zen Trading Journal v8</title>
+<title>Zen Trading Journal v9</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;450;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Non-blocking font load prevents render-blocking -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;450;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;450;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap"></noscript>
 <style>
 
 :root {
@@ -1182,7 +1186,7 @@ const CG_IDS = {
 };
 
 // ── LIVE STATUS INDICATOR ────────────────────────────────────────
-function setLiveStatus(msg, type = 'loading') {
+function setScreenerLiveStatus(msg, type = 'loading') {
   const colors = { loading:'var(--yellow)', ok:'var(--green)', error:'var(--red)' };
   const icons  = { loading:'⟳', ok:'●', error:'⚠' };
   document.querySelectorAll('.live-status-dot').forEach(el => {
@@ -1299,9 +1303,8 @@ async function fetchLiveScreenerData() {
     const rsi   = estimateRSI(data);
     const macd  = data.d >= 0 ? 'Bullish' : 'Bearish';
     const trend = chg > 1 ? 'Uptrend' : chg < -1 ? 'Downtrend' : 'Ranging';
-    const vol   = parseFloat((0.5 + Math.random()*2.5).toFixed(1)); // volume ratio needs ws feed
     const signal= computeSignal(rsi, macd, chg);
-    rows.push({ sym:symbol, mkt:'US Stocks', price:price.toFixed(2), chg:parseFloat(chg.toFixed(2)), rsi, macd, trend, vol, signal, live:true });
+    rows.push({ sym:symbol, mkt:'US Stocks', price:price.toFixed(2), chg:parseFloat(chg.toFixed(2)), rsi, macd, trend, vol:null, signal, live:true }); // vol null = unavailable without websocket feed
   });
 
   // Crypto
@@ -1326,8 +1329,7 @@ async function fetchLiveScreenerData() {
     const rsi    = estimateRSI(data);
     const macd   = data.d >= 0 ? 'Bullish' : 'Bearish';
     const trend  = chg > 0.5 ? 'Uptrend' : chg < -0.5 ? 'Downtrend' : 'Ranging';
-    const vol    = parseFloat((0.4 + Math.random()*3).toFixed(1));
-    rows.push({ sym:nseSym, mkt:'NSE', price:data.c.toFixed(2), chg:parseFloat(chg.toFixed(2)), rsi, macd, trend, vol, signal:computeSignal(rsi,macd,chg), live:true });
+    rows.push({ sym:nseSym, mkt:'NSE', price:data.c.toFixed(2), chg:parseFloat(chg.toFixed(2)), rsi, macd, trend, vol:null, signal:computeSignal(rsi,macd,chg), live:true }); // vol null = unavailable without websocket feed
   });
 
   // Add Forex via fxRates — price is live, change%/RSI unavailable without OHLC feed
@@ -1349,10 +1351,10 @@ async function fetchLiveScreenerData() {
 
   if (rows.length > 0) {
     screenerData = rows;
-    setLiveStatus(`Live — ${rows.length} instruments`, 'ok');
+    setScreenerLiveStatus(`Live — ${rows.length} instruments`, 'ok');
   } else {
     screenerData = generateScreenerData();
-    setLiveStatus('Fallback to simulated data', 'error');
+    setScreenerLiveStatus('Fallback to simulated data', 'error');
   }
   return screenerData;
 }
@@ -3653,7 +3655,7 @@ console.log('✅ Live Data Engine loaded — Finnhub + Alpha Vantage + CoinGecko
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <button class="btn btn-ghost" onclick="openAngelOneSetup()" style="border-color:rgba(255,140,0,0.4);color:#ff8c00;gap:6px">
-        <span style="font-size:14px">🔶</span> Angel One Setup
+        <span style="font-size:14px">🔶</span> NSE Live Setup
       </button>
       <button class="btn btn-ghost" onclick="refreshLiveMarkets()" style="border-color:rgba(74,222,128,0.3);color:var(--green)">🔄 Refresh All</button>
       <span id="lm-last-updated" style="font-size:10px;color:var(--text3);font-family:var(--font-mono)">Last updated: —</span>
@@ -3929,7 +3931,7 @@ console.log('✅ Live Data Engine loaded — Finnhub + Alpha Vantage + CoinGecko
   <div class="section-head">
     <div>
       <div class="section-title">🐛 Changelog &amp; <span>Known Issues</span></div>
-      <div class="section-sub">v8.0 — All bugs from the original code review have been fixed in this release</div>
+      <div class="section-sub">v9.0 — Comprehensive fresh audit: 8 new bugs found and fixed on top of v8.0 baseline</div>
     </div>
   </div>
 
@@ -3937,15 +3939,15 @@ console.log('✅ Live Data Engine loaded — Finnhub + Alpha Vantage + CoinGecko
   <div style="background:linear-gradient(135deg,rgba(34,197,94,0.08),rgba(74,222,128,0.04));border:1px solid rgba(34,197,94,0.25);border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;gap:16px">
     <div style="font-size:40px;flex-shrink:0">✅</div>
     <div>
-      <div style="font-family:var(--font-head);font-size:17px;font-weight:700;color:var(--green);margin-bottom:4px">v8.0 — All 13 Bugs Fixed</div>
-      <div style="font-size:13px;color:var(--text2);line-height:1.6">This release resolves all bugs identified during the production readiness audit. The two critical security issues (hardcoded API keys), the drawdown calculation error, CSV import corruption, and 9 other bugs have all been corrected. No known open issues remain.</div>
+      <div style="font-family:var(--font-head);font-size:17px;font-weight:700;color:var(--green);margin-bottom:4px">v9.0 — All Bugs Fixed · Production Ready</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6">v9.0 resolves all bugs found in a full fresh audit of the v8.0 codebase: render-blocking fonts, missing Apple touch icon, a duplicate <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">setLiveStatus</code> function, 9 hardcoded $ currency signs in the Risk tab, random volume ratios shown as "LIVE" data, a vol filter null-crash for live stocks, division-by-zero in two risk calculators, and PWA service worker improvements.</div>
     </div>
   </div>
 
   <!-- v8.0 Fixed Bugs Table -->
   <div class="panel" style="margin-bottom:24px">
     <div class="panel-header">
-      <span class="panel-title">🔧 v8.0 — Fixed in This Release</span>
+      <span class="panel-title">🔧 v9.0 — Fixes in This Release</span>
       <span class="panel-meta">February 2026</span>
     </div>
     <div style="padding:0">
@@ -4051,6 +4053,69 @@ console.log('✅ Live Data Engine loaded — Finnhub + Alpha Vantage + CoinGecko
             <td style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">News tab, Forecast view, AI prompt</td>
             <td><span style="font-size:11px;font-weight:700;color:var(--green)">✅ Fixed</span></td>
           </tr>
+          <tr>
+            <td style="color:var(--text3);font-family:var(--font-mono)">N1</td>
+            <td><span style="font-size:11px;font-weight:700;color:#f97316;background:rgba(249,115,22,0.1);padding:2px 8px;border-radius:4px">🟠 High</span></td>
+            <td><strong>Render-blocking Google Fonts delayed first paint.</strong> The fonts were loaded with a synchronous <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">&lt;link rel="stylesheet"&gt;</code> tag, which blocks all page rendering until fonts are fetched. Replaced with a <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">rel="preload"</code> + onload swap pattern for non-blocking loading.</td>
+            <td style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">&lt;head&gt;, line 13</td>
+            <td><span style="font-size:11px;font-weight:700;color:var(--green)">✅ Fixed</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--text3);font-family:var(--font-mono)">N2</td>
+            <td><span style="font-size:11px;font-weight:700;color:#eab308;background:rgba(234,179,8,0.1);padding:2px 8px;border-radius:4px">🟡 Medium</span></td>
+            <td><strong>Missing Apple Touch Icon — iOS home screen installs show blank icon.</strong> No <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">&lt;link rel="apple-touch-icon"&gt;</code> meta tag existed. iOS ignores PWA manifest icons for home screen thumbnails and requires this dedicated tag. Added SVG data-URI icon at 180×180px.</td>
+            <td style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">&lt;head&gt; meta tags</td>
+            <td><span style="font-size:11px;font-weight:700;color:var(--green)">✅ Fixed</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--text3);font-family:var(--font-mono)">N3</td>
+            <td><span style="font-size:11px;font-weight:700;color:#eab308;background:rgba(234,179,8,0.1);padding:2px 8px;border-radius:4px">🟡 Medium</span></td>
+            <td><strong>Duplicate <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">setLiveStatus()</code> function — second definition silently shadows first.</strong> Two functions with the same name existed: the first (line 1185) updated screener status badges; the second (line 4279) updated individual connection dots by element ID. The second silently overwrote the first, breaking screener status badges. First renamed to <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">setScreenerLiveStatus()</code>.</td>
+            <td style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">Lines 1185 &amp; 4279</td>
+            <td><span style="font-size:11px;font-weight:700;color:var(--green)">✅ Fixed</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--text3);font-family:var(--font-mono)">N4</td>
+            <td><span style="font-size:11px;font-weight:700;color:#eab308;background:rgba(234,179,8,0.1);padding:2px 8px;border-radius:4px">🟡 Medium</span></td>
+            <td><strong>9 hardcoded <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">'$'</code> signs in Risk tab and equity chart — broke for non-USD users.</strong> calcPosition(), calcRR(), calcEV(), updateDDMonitor(), and the equity chart Y-axis all concatenated <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">'$'</code> directly instead of calling <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">fmtCurrency()</code>. Indian (₹), Euro (€), and other users saw wrong currency symbols throughout the Risk tab. All 9 fixed.</td>
+            <td style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">Risk tab JS, lines 5968–6022; equity chart line 5211</td>
+            <td><span style="font-size:11px;font-weight:700;color:var(--green)">✅ Fixed</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--text3);font-family:var(--font-mono)">N5</td>
+            <td><span style="font-size:11px;font-weight:700;color:#eab308;background:rgba(234,179,8,0.1);padding:2px 8px;border-radius:4px">🟡 Medium</span></td>
+            <td><strong>Volume ratio shown as "LIVE" data but generated with <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">Math.random()</code> for live US and NSE stocks.</strong> When Finnhub quotes loaded, price/RSI/MACD were real — but vol ratio was still <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">0.5 + Math.random()*2.5</code>. This gave a false sense of live volume data. Vol is now set to <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">null</code> for live rows and the screener renders "—" in that column.</td>
+            <td style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">fetchLiveScreenerData(), lines 1302 &amp; 1329</td>
+            <td><span style="font-size:11px;font-weight:700;color:var(--green)">✅ Fixed</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--text3);font-family:var(--font-mono)">N6</td>
+            <td><span style="font-size:11px;font-weight:700;color:#eab308;background:rgba(234,179,8,0.1);padding:2px 8px;border-radius:4px">🟡 Medium</span></td>
+            <td><strong>Vol filter crash — live stocks with <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">null</code> vol were excluded from screener by default.</strong> The filter used <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">r.vol >= volMin</code>. In JavaScript, <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">null >= 0</code> evaluates to <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">false</code>, so all live rows (with null vol) disappeared from the default view. Filter now passes rows where vol is null.</td>
+            <td style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">renderScreener() filter, line 6988</td>
+            <td><span style="font-size:11px;font-weight:700;color:var(--green)">✅ Fixed</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--text3);font-family:var(--font-mono)">N7</td>
+            <td><span style="font-size:11px;font-weight:700;color:#3b82f6;background:rgba(59,130,246,0.1);padding:2px 8px;border-radius:4px">🔵 Low</span></td>
+            <td><strong>Division-by-zero in Position Sizer when Entry = Stop.</strong> <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">calcPosition()</code> divided by <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">Math.abs(entry - stop)</code>, which is 0 when they're equal, yielding <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">Infinity</code> shares displayed. Guard added: returns early if the distance is less than 0.0001.</td>
+            <td style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">calcPosition(), Risk tab</td>
+            <td><span style="font-size:11px;font-weight:700;color:var(--green)">✅ Fixed</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--text3);font-family:var(--font-mono)">N8</td>
+            <td><span style="font-size:11px;font-weight:700;color:#3b82f6;background:rgba(59,130,246,0.1);padding:2px 8px;border-radius:4px">🔵 Low</span></td>
+            <td><strong>Division-by-zero in R/R Calculator when Entry = Stop.</strong> Same issue in <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">calcRR()</code> — risk is 0 when entry equals stop, making ratio <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">Infinity</code>. Early return guard added when risk distance &lt; 0.0001.</td>
+            <td style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">calcRR(), Risk tab</td>
+            <td><span style="font-size:11px;font-weight:700;color:var(--green)">✅ Fixed</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--text3);font-family:var(--font-mono)">N9</td>
+            <td><span style="font-size:11px;font-weight:700;color:#3b82f6;background:rgba(59,130,246,0.1);padding:2px 8px;border-radius:4px">🔵 Low</span></td>
+            <td><strong>PWA Service Worker registered even when running as <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">file://</code>.</strong> The blob: URL SW registration attempt silently failed on Chrome when opened as a local file, and would also show confusing errors. Registration is now skipped when the protocol is not HTTP/HTTPS, with a console message explaining why.</td>
+            <td style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">SW registration, line 8876</td>
+            <td><span style="font-size:11px;font-weight:700;color:var(--green)">✅ Fixed</span></td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -4089,8 +4154,12 @@ console.log('✅ Live Data Engine loaded — Finnhub + Alpha Vantage + CoinGecko
     </div>
     <div style="padding:20px;display:flex;flex-direction:column;gap:16px">
       <div>
-        <div style="font-family:var(--font-head);font-size:15px;font-weight:700;color:var(--green);margin-bottom:6px">v8.0 — February 2026 <span style="font-size:11px;font-weight:400;color:var(--text3);margin-left:8px">Current</span></div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.8">Full security overhaul · Removed hardcoded API keys · Merged dual config systems · Fixed drawdown calculation · RFC 4180 CSV parser · Benchmark capital fix · Calculators re-seed on settings change · Single canonical saveTrade() · Canvas roundRect polyfill · Stale data disclaimers · Version string corrected · BlackRock brand references removed · Changelog view added · 13 bugs fixed total</div>
+        <div style="font-family:var(--font-head);font-size:15px;font-weight:700;color:var(--green);margin-bottom:6px">v9.0 — February 2026 <span style="font-size:11px;font-weight:400;color:var(--text3);margin-left:8px">Current</span></div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.8">Non-blocking font loading · Apple touch icon · Duplicate setLiveStatus fixed · All Risk tab $ signs use fmtCurrency · Random vol removed from LIVE screener rows · Vol filter null-safe · Position Sizer &amp; R/R Calculator division-by-zero guards · PWA SW HTTP guard · 2026 Outlook data disclaimer · 9 new bugs fixed</div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:16px">
+        <div style="font-family:var(--font-head);font-size:15px;font-weight:700;color:var(--text2);margin-bottom:6px">v8.0 — February 2026</div>
+        <div style="font-size:12px;color:var(--text3);line-height:1.8">Full security overhaul · Removed hardcoded API keys · Merged dual config systems · Fixed drawdown calculation · RFC 4180 CSV parser · Benchmark capital fix · Calculators re-seed on settings change · Single canonical saveTrade() · Canvas roundRect polyfill · Stale data disclaimers · Version string corrected · BlackRock brand references removed · Changelog view added · 13 bugs fixed total</div>
       </div>
       <div style="border-top:1px solid var(--border);padding-top:16px">
         <div style="font-family:var(--font-head);font-size:15px;font-weight:700;color:var(--text2);margin-bottom:6px">v7.0 — Original Release</div>
@@ -4420,7 +4489,12 @@ async function loadAllLiveData(){ loadLiveFearGreed(); loadLiveCrypto(); loadLiv
 //   Refreshes every 60s. Falls back to free APIs for crypto/forex/US.
 // ═══════════════════════════════════════════════════════════════
 
-const GH_DATA_URL = './data.json';   // served by GitHub Pages from repo root
+// GH_DATA_URL: reads from saved GitHub Pages repo URL or falls back to ./data.json
+function getGHDataUrl() {
+  const saved = localStorage.getItem('gh_repo') || '';
+  return saved ? saved.replace(/\/$/, '') + '/data.json' : './data.json';
+}
+const GH_DATA_URL = './data.json';   // fallback; getGHDataUrl() is used at runtime
 
 const GHData = {
   cache: null,
@@ -4430,7 +4504,7 @@ const GHData = {
     // Cache for 55s (Actions runs every 60s)
     if (GHData.cache && Date.now() - GHData.lastFetch < 55000) return GHData.cache;
     try {
-      const r = await fetch(GH_DATA_URL + '?t=' + Date.now());
+      const r = await fetch(getGHDataUrl() + '?t=' + Date.now());
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const d = await r.json();
       GHData.cache = d;
@@ -4784,7 +4858,7 @@ function loadFOChain() {
 }
 
 function renderFOChainDemo() {
-  // Show demo chain with static data when Angel One not connected
+  // Demo chain with illustrative data only — NOT real market data
   const spot = 22500;
   const strikes = [22000,22100,22200,22300,22400,22500,22600,22700,22800,22900,23000];
   const atm = strikes.reduce((a,b) => Math.abs(b-spot)<Math.abs(a-spot)?b:a);
@@ -4870,6 +4944,8 @@ function openAngelOneSetup() {
   const repo = localStorage.getItem('gh_repo') || '';
   const el = document.getElementById('gh-repo-input');
   if (el) el.value = repo;
+  // Start at step 1, run status check in background
+  aoShowStep(1);
   checkGHDataStatus();
 }
 
@@ -4878,11 +4954,37 @@ function closeAngelOneSetup() {
   if (o) o.classList.remove('open');
 }
 
+function aoShowStep(n) {
+  [1,2,3,4].forEach(i => {
+    const s = document.getElementById('ao-step-' + i);
+    const t = document.getElementById('ao-tab-' + i);
+    if (!s || !t) return;
+    s.style.display = i === n ? 'block' : 'none';
+    t.style.background = i === n ? 'var(--accent)' : '';
+    t.style.color = i === n ? 'white' : '';
+    t.className = i === n ? 'btn' : 'btn btn-ghost';
+    t.style.border = i === n ? 'none' : '';
+  });
+  // Update data.json preview URL in step 4
+  if (n === 4) {
+    const repo = localStorage.getItem('gh_repo') || '';
+    const el = document.getElementById('ao-data-json-url');
+    if (el && repo) el.textContent = repo.replace(/\/$/, '') + '/data.json';
+  }
+}
+
 function saveGHSettings() {
   const repo = document.getElementById('gh-repo-input')?.value.trim();
   if (repo) localStorage.setItem('gh_repo', repo);
   closeAngelOneSetup();
   showToast('✅ Settings saved', 'success');
+}
+
+function saveGHSettingsAndVerify() {
+  const repo = document.getElementById('gh-repo-input')?.value.trim();
+  if (repo) localStorage.setItem('gh_repo', repo);
+  aoShowStep(4);
+  checkGHDataStatus();
 }
 
 function clearAngelOneCreds() {
@@ -4896,26 +4998,395 @@ async function checkGHDataStatus() {
   if (!dot || !txt) return;
   dot.style.background = 'var(--yellow)';
   txt.textContent = 'Checking data.json…';
+
+  // Use saved GitHub Pages URL if available, else fall back to same-origin ./data.json
+  const savedRepo = localStorage.getItem('gh_repo') || '';
+  const dataUrl = savedRepo
+    ? savedRepo.replace(/\/$/, '') + '/data.json?t=' + Date.now()
+    : GH_DATA_URL + '?t=' + Date.now();
+
   try {
-    const d = await GHData.get();
+    const r = await fetch(dataUrl);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
     if (d && d.timestamp) {
       const age = Math.round((Date.now() - new Date(d.timestamp).getTime()) / 1000);
       dot.style.background = age < 120 ? 'var(--green)' : 'var(--yellow)';
       txt.textContent = age < 120
         ? `✅ Live data — updated ${age}s ago (${d.source || 'GitHub Actions'})`
-        : `⚠ Data is ${age}s old — is Actions workflow running?`;
+        : `⚠ Data is ${Math.round(age/60)}m old — is the workflow running?`;
+      // Also refresh the main GHData cache
+      GHData.cache = d;
+      GHData.lastFetch = Date.now();
     } else {
       dot.style.background = 'var(--red)';
-      txt.textContent = '❌ data.json not found — run GitHub Actions workflow once first';
+      txt.textContent = '❌ data.json found but has no timestamp — check workflow logs';
     }
   } catch(e) {
     dot.style.background = 'var(--red)';
-    txt.textContent = '❌ Cannot reach data.json — deploy to GitHub Pages first';
+    if (!savedRepo) {
+      txt.textContent = '⬆ Enter your GitHub Pages URL in Step 3 to verify';
+      dot.style.background = 'var(--text3)';
+    } else {
+      txt.textContent = '❌ Cannot reach data.json at that URL — check Pages is enabled';
+    }
   }
 }
 
-// Keep these as no-ops for backward compat
-function downloadAngelBridge() {}
+// ── GITHUB ACTIONS FILE GENERATOR ──────────────────────────────
+// Generates the two companion files users need: fetch_market.py + workflow yml
+// All logic is inline — no external deps, works fully offline
+
+const FETCH_MARKET_PY = `#!/usr/bin/env python3
+"""
+fetch_market.py — Angel One SmartAPI data fetcher for Zen Trading Journal
+Runs via GitHub Actions every minute during NSE market hours.
+Writes data.json to repo root (served by GitHub Pages).
+
+Required GitHub Secrets:
+  AO_CLIENT_CODE   — Your Angel One login ID
+  AO_API_KEY       — From smartapi.angelbroking.com
+  AO_TOTP_SECRET   — Base32 TOTP secret from Angel One
+  AO_MPIN          — Your 4-digit MPIN
+  GH_PAT           — GitHub Personal Access Token (repo scope)
+"""
+import os, json, time, hmac, hashlib, struct, base64, math
+from datetime import datetime, timezone
+import urllib.request, urllib.error
+
+# ── Config from GitHub Secrets ──────────────────────────────────
+CLIENT_CODE  = os.environ["AO_CLIENT_CODE"]
+API_KEY      = os.environ["AO_API_KEY"]
+TOTP_SECRET  = os.environ["AO_TOTP_SECRET"]
+MPIN         = os.environ["AO_MPIN"]
+GH_PAT       = os.environ["GH_PAT"]
+GH_REPO      = os.environ.get("GITHUB_REPOSITORY", "")  # auto-set by Actions
+GH_BRANCH    = os.environ.get("GH_BRANCH", "main")
+
+BASE_URL = "https://apiconnect.angelbroking.com"
+
+# ── TOTP (RFC 6238) — no pyotp dep needed ───────────────────────
+def generate_totp(secret_b32: str) -> str:
+    key = base64.b32decode(secret_b32.upper().replace(" ", ""))
+    counter = struct.pack(">Q", int(time.time()) // 30)
+    hmac_hash = hmac.new(key, counter, hashlib.sha1).digest()
+    offset = hmac_hash[-1] & 0x0F
+    code = struct.unpack(">I", hmac_hash[offset:offset+4])[0] & 0x7FFFFFFF
+    return str(code % 1000000).zfill(6)
+
+# ── Angel One API helpers ────────────────────────────────────────
+def ao_post(path: str, payload: dict, headers: dict = None) -> dict:
+    url = BASE_URL + path
+    data = json.dumps(payload).encode()
+    req = urllib.request.Request(url, data=data,
+          headers={"Content-Type": "application/json",
+                   "Accept": "application/json",
+                   "X-UserType": "USER",
+                   "X-SourceID": "WEB",
+                   "X-ClientLocalIP": "127.0.0.1",
+                   "X-ClientPublicIP": "127.0.0.1",
+                   "X-MACAddress": "00:00:00:00:00:00",
+                   "X-PrivateKey": API_KEY,
+                   **(headers or {})})
+    with urllib.request.urlopen(req, timeout=15) as r:
+        return json.loads(r.read())
+
+def ao_get(path: str, token: str) -> dict:
+    url = BASE_URL + path
+    req = urllib.request.Request(url,
+          headers={"Authorization": f"Bearer {token}",
+                   "Content-Type": "application/json",
+                   "Accept": "application/json",
+                   "X-UserType": "USER",
+                   "X-SourceID": "WEB",
+                   "X-ClientLocalIP": "127.0.0.1",
+                   "X-ClientPublicIP": "127.0.0.1",
+                   "X-MACAddress": "00:00:00:00:00:00",
+                   "X-PrivateKey": API_KEY})
+    with urllib.request.urlopen(req, timeout=15) as r:
+        return json.loads(r.read())
+
+# ── Login ────────────────────────────────────────────────────────
+def login() -> str:
+    totp = generate_totp(TOTP_SECRET)
+    resp = ao_post("/rest/auth/angelbroking/user/v1/loginByPassword", {
+        "clientcode": CLIENT_CODE,
+        "password": MPIN,
+        "totp": totp
+    })
+    if not resp.get("status"):
+        raise RuntimeError(f"Login failed: {resp.get('message', 'unknown error')}")
+    return resp["data"]["jwtToken"]
+
+# ── Fetch NSE indices ────────────────────────────────────────────
+INDEX_TOKENS = {
+    "NIFTY50":     "99926000",
+    "BANKNIFTY":   "99926009",
+    "SENSEX":      "99919000",
+    "NIFTYIT":     "99926048",
+    "MIDCPNIFTY":  "99926013",
+    "INDIAVIX":    "99919003",
+}
+
+def fetch_indices(token: str) -> dict:
+    indices = {}
+    for sym, tok in INDEX_TOKENS.items():
+        try:
+            resp = ao_get(f"/rest/secure/angelbroking/market/v1/quote/?mode=FULL&exchangeTokens={{\"NSE\":[\"{tok}\"]}}", token)
+            if resp.get("status") and resp["data"].get("fetched"):
+                d = resp["data"]["fetched"][0]
+                ltp = float(d.get("ltp", 0))
+                close = float(d.get("close", ltp) or ltp)
+                chg_pct = ((ltp - close) / close * 100) if close else 0
+                indices[sym] = {"ltp": round(ltp, 2), "chg": round(chg_pct, 2), "close": round(close, 2)}
+        except Exception as e:
+            print(f"  ⚠ Index {sym}: {e}")
+    return indices
+
+# ── Fetch top movers ─────────────────────────────────────────────
+NIFTY50_SYMBOLS = [
+    ("RELIANCE","2885"),("TCS","11536"),("HDFCBANK","1333"),("INFY","1594"),
+    ("ICICIBANK","4963"),("BHARTIARTL","10604"),("ITC","1660"),("SBIN","3045"),
+    ("WIPRO","3787"),("NESTLEIND","17963"),("BAJFINANCE","317"),("LT","11483"),
+    ("HCLTECH","7229"),("TITAN","3506"),("KOTAKBANK","1922"),("ADANIENT","25"),
+    ("MARUTI","10999"),("SUNPHARMA","3351"),("ASIANPAINT","236"),("ULTRACEMCO","2585"),
+]
+
+def fetch_movers(token: str) -> dict:
+    gainers, losers = [], []
+    try:
+        tok_str = ",".join(f'"{t}"' for _, t in NIFTY50_SYMBOLS)
+        resp = ao_get(f'/rest/secure/angelbroking/market/v1/quote/?mode=LTP&exchangeTokens={{"NSE":[{tok_str}]}}', token)
+        if resp.get("status") and resp["data"].get("fetched"):
+            sym_map = {t: s for s, t in NIFTY50_SYMBOLS}
+            rows = []
+            for d in resp["data"]["fetched"]:
+                sym = sym_map.get(d.get("symbolToken",""), d.get("tradingSymbol",""))
+                ltp = float(d.get("ltp", 0))
+                close = float(d.get("close", ltp) or ltp)
+                chg = ((ltp - close) / close * 100) if close else 0
+                rows.append({"symbol": sym, "ltp": round(ltp,2), "chg": round(chg,2), "series": "EQ"})
+            rows.sort(key=lambda x: x["chg"], reverse=True)
+            gainers = rows[:10]
+            losers  = rows[-10:][::-1]
+    except Exception as e:
+        print(f"  ⚠ Movers: {e}")
+    return {"gainers": gainers, "losers": losers}
+
+# ── Fetch F&O option chain (NIFTY, current expiry) ───────────────
+def fetch_fo_chain(token: str) -> dict:
+    try:
+        resp = ao_get(
+            "/rest/secure/angelbroking/market/v1/getCandleData?"
+            "exchange=NFO&symboltoken=99926000&interval=ONE_MINUTE",
+            token
+        )
+        # Use OC endpoint instead
+        resp2 = ao_post("/rest/secure/angelbroking/market/v1/optionChain",
+                        {"name": "NIFTY", "expirydate": "", "strikecount": 12},
+                        {"Authorization": f"Bearer {token}"})
+        if not (resp2.get("status") and resp2.get("data")):
+            return {}
+        oc = resp2["data"]
+        spot = float(oc.get("underlyingLTP", 22500))
+        atm = round(spot / 50) * 50
+        chain_data = oc.get("OC", {})
+        strikes = []
+        call_oi_total = put_oi_total = 0
+        for strike_price, opt in sorted(chain_data.items(), key=lambda x: float(x[0])):
+            sp = float(strike_price)
+            c = opt.get("CE", {})
+            p = opt.get("PE", {})
+            call_oi  = int(c.get("openInterest", 0))
+            put_oi   = int(p.get("openInterest", 0))
+            call_oi_total += call_oi
+            put_oi_total  += put_oi
+            strikes.append({
+                "strike": sp,
+                "atm": abs(sp - atm) < 1,
+                "callOI":     call_oi,
+                "callLTP":    float(c.get("lastPrice", 0)),
+                "callPrevLTP":float(c.get("closePrice", 0)),
+                "putOI":      put_oi,
+                "putLTP":     float(p.get("lastPrice", 0)),
+                "putPrevLTP": float(p.get("closePrice", 0)),
+            })
+        pcr = (put_oi_total / call_oi_total) if call_oi_total else 1.0
+        # Max pain
+        max_pain = atm
+        min_pain_val = float("inf")
+        for s in strikes:
+            pain = sum(max(0, (s["strike"] - x["strike"])) * x["callOI"] +
+                       max(0, (x["strike"] - s["strike"])) * x["putOI"]
+                       for x in strikes)
+            if pain < min_pain_val:
+                min_pain_val = pain
+                max_pain = s["strike"]
+        return {
+            "pcr": round(pcr, 3),
+            "maxpain": max_pain,
+            "totaloi": call_oi_total + put_oi_total,
+            "spot": round(spot, 2),
+            "chain": strikes,
+        }
+    except Exception as e:
+        print(f"  ⚠ F&O chain: {e}")
+        return {}
+
+# ── Write data.json to GitHub via API ───────────────────────────
+def push_to_github(payload: dict):
+    content = base64.b64encode(json.dumps(payload, separators=(",", ":")).encode()).decode()
+    path = f"https://api.github.com/repos/{GH_REPO}/contents/data.json"
+
+    # Get current SHA (needed for update)
+    sha = None
+    try:
+        req = urllib.request.Request(path,
+              headers={"Authorization": f"token {GH_PAT}",
+                       "Accept": "application/vnd.github.v3+json",
+                       "User-Agent": "ZenJournal-Actions"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            sha = json.loads(r.read()).get("sha")
+    except urllib.error.HTTPError as e:
+        if e.code != 404:
+            raise
+
+    body = {"message": f"data: market snapshot {payload['timestamp']}",
+            "content": content,
+            "branch": GH_BRANCH}
+    if sha:
+        body["sha"] = sha
+
+    data = json.dumps(body).encode()
+    req = urllib.request.Request(path, data=data, method="PUT",
+          headers={"Authorization": f"token {GH_PAT}",
+                   "Accept": "application/vnd.github.v3+json",
+                   "Content-Type": "application/json",
+                   "User-Agent": "ZenJournal-Actions"})
+    with urllib.request.urlopen(req, timeout=15) as r:
+        resp = json.loads(r.read())
+    print(f"  ✅ Pushed data.json (SHA: {resp.get('content', {}).get('sha', '?')[:7]})")
+
+# ── Market hours check ───────────────────────────────────────────
+def is_market_open() -> bool:
+    now_ist = datetime.now(timezone.utc).replace(tzinfo=timezone.utc)
+    # IST = UTC+5:30
+    from datetime import timedelta
+    ist = now_ist + timedelta(hours=5, minutes=30)
+    if ist.weekday() >= 5:  # Sat/Sun
+        return False
+    h, m = ist.hour, ist.minute
+    # 09:00 to 15:30 IST
+    return (h == 9 and m >= 0) or (9 < h < 15) or (h == 15 and m <= 30)
+
+# ── Main ─────────────────────────────────────────────────────────
+def main():
+    print(f"ZenJournal fetch_market.py — {datetime.utcnow().isoformat()}Z")
+
+    if not is_market_open():
+        print("  ℹ Market closed — skipping fetch")
+        return
+
+    print("  🔐 Logging in to Angel One…")
+    token = login()
+    print("  ✅ Login OK")
+
+    print("  📊 Fetching indices…")
+    indices = fetch_indices(token)
+    print(f"  ✅ {len(indices)} indices fetched: {list(indices.keys())}")
+
+    print("  📈 Fetching movers…")
+    movers = fetch_movers(token)
+    print(f"  ✅ {len(movers.get('gainers',[]))} gainers, {len(movers.get('losers',[]))} losers")
+
+    print("  🔗 Fetching F&O chain…")
+    fo = fetch_fo_chain(token)
+    print(f"  ✅ F&O: PCR={fo.get('pcr','—')}, MaxPain={fo.get('maxpain','—')}")
+
+    payload = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "source": "Angel One SmartAPI via GitHub Actions",
+        "indices": indices,
+        "movers": movers,
+        "fo": fo,
+    }
+
+    print("  📤 Pushing to GitHub…")
+    push_to_github(payload)
+    print("  🎉 Done!")
+
+if __name__ == "__main__":
+    main()
+`;
+
+const WORKFLOW_YML = `name: Fetch NSE Market Data
+
+on:
+  schedule:
+    # Every minute during IST market hours (Mon-Fri 03:30-10:00 UTC = 09:00-15:30 IST)
+    - cron: '* 3-10 * * 1-5'
+  workflow_dispatch:   # Allow manual trigger for testing
+
+permissions:
+  contents: write      # Needed to push data.json
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: \${{ secrets.GH_PAT }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # No pip install needed — fetch_market.py uses only stdlib
+
+      - name: Fetch market data
+        env:
+          AO_CLIENT_CODE:  \${{ secrets.AO_CLIENT_CODE }}
+          AO_API_KEY:      \${{ secrets.AO_API_KEY }}
+          AO_TOTP_SECRET:  \${{ secrets.AO_TOTP_SECRET }}
+          AO_MPIN:         \${{ secrets.AO_MPIN }}
+          GH_PAT:          \${{ secrets.GH_PAT }}
+          GH_BRANCH:       main
+        run: python fetch_market.py
+`;
+
+function downloadFile(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+function downloadPythonScript() {
+  downloadFile('fetch_market.py', FETCH_MARKET_PY, 'text/plain');
+  showToast('✅ fetch_market.py downloaded', 'success');
+}
+
+function downloadWorkflowYML() {
+  downloadFile('fetch_market.yml', WORKFLOW_YML, 'text/plain');
+  showToast('✅ fetch_market.yml downloaded', 'success');
+}
+
+function downloadBothFiles() {
+  downloadPythonScript();
+  setTimeout(() => downloadWorkflowYML(), 400);
+  showToast('⬇ Downloading both files…', 'success');
+}
+
 
 // FT.start() and live markets init are called from the boot IIFE below (after app boots)
 
@@ -5140,7 +5611,7 @@ function renderStats() {
   document.getElementById('stat-r').textContent = s.r.toFixed(2) + 'R';
   document.getElementById('stat-r').className = 'stat-value ' + (s.r >= 0 ? 'positive' : 'negative');
 
-  document.getElementById('stat-dd').textContent = s.dd > 0 ? '-$' + s.dd.toFixed(2) : '$0.00';
+  document.getElementById('stat-dd').textContent = s.dd > 0 ? '-' + fmtCurrency(s.dd) : fmtCurrency(0);
   document.getElementById('stat-dd').className = 'stat-value ' + (s.dd > 0 ? 'negative' : 'neutral');
 
   const bestEl = document.getElementById('stat-best');
@@ -5208,7 +5679,7 @@ function renderEquityChart() {
     ctx.fillStyle = 'rgba(255,255,255,0.25)';
     ctx.font = '10px JetBrains Mono';
     ctx.textAlign = 'right';
-    ctx.fillText((val >= 0 ? '$' : '-$') + Math.abs(val).toFixed(0), pad.l - 8, y + 3);
+    ctx.fillText((val < 0 ? '-' : '') + fmtCurrency(Math.abs(val)), pad.l - 8, y + 3);
   }
 
   // Zero line
@@ -5959,14 +6430,14 @@ function calcPosition() {
   const rp = parseFloat(document.getElementById('rc-riskpct').value) || 1;
   const entry = parseFloat(document.getElementById('rc-entry').value) || 0;
   const stop = parseFloat(document.getElementById('rc-stop').value) || 0;
-  if (!entry || !stop || entry === stop) return;
+  if (!acc || !entry || !stop || Math.abs(entry - stop) < 0.0001) return; // guard division-by-zero
   const riskDollar = acc * rp / 100;
   const riskPerShare = Math.abs(entry - stop);
   const shares = Math.floor(riskDollar / riskPerShare);
   const posVal = shares * entry;
   document.getElementById('rc-shares').textContent = shares.toLocaleString();
-  document.getElementById('rc-riskdollar').textContent = '$' + riskDollar.toFixed(0);
-  document.getElementById('rc-posval').textContent = '$' + posVal.toFixed(0);
+  document.getElementById('rc-riskdollar').textContent = fmtCurrency(riskDollar);
+  document.getElementById('rc-posval').textContent = fmtCurrency(posVal);
 }
 
 function calcRR() {
@@ -5976,10 +6447,11 @@ function calcRR() {
   if (!entry || !stop || !target) return;
   const risk = Math.abs(entry - stop);
   const reward = Math.abs(target - entry);
+  if (risk < 0.0001) return; // guard against division-by-zero when entry == stop
   const ratio = reward / risk;
   const breakeven = (1 / (1 + ratio) * 100).toFixed(1);
-  document.getElementById('rr-riskval').textContent = '$' + risk.toFixed(2);
-  document.getElementById('rr-rewardval').textContent = '$' + reward.toFixed(2);
+  document.getElementById('rr-riskval').textContent = fmtCurrency(risk);
+  document.getElementById('rr-rewardval').textContent = fmtCurrency(reward);
   document.getElementById('rr-ratio').textContent = '1:' + ratio.toFixed(2);
   document.getElementById('rr-breakeven').textContent = breakeven + '%';
   const riskW = Math.round(risk / (risk + reward) * 100);
@@ -5995,10 +6467,10 @@ function calcEV() {
   const kelly = ((wr * win - (1 - wr) * loss) / win * 100);
   const halfKelly = kelly / 2;
   const expRatio = win / loss;
-  document.getElementById('ev-result').textContent = (ev >= 0 ? '+$' : '-$') + Math.abs(ev).toFixed(0);
+  document.getElementById('ev-result').textContent = (ev >= 0 ? '+' : '-') + fmtCurrency(Math.abs(ev));
   document.getElementById('ev-result').style.color = ev >= 0 ? 'var(--green)' : 'var(--red)';
   document.getElementById('ev-kelly').textContent = kelly.toFixed(1) + '%';
-  document.getElementById('ev-halfkelly').textContent = '$' + (acc * halfKelly / 100).toFixed(0);
+  document.getElementById('ev-halfkelly').textContent = fmtCurrency(acc * halfKelly / 100);
   document.getElementById('ev-exp').textContent = expRatio.toFixed(2) + ':1';
 }
 
@@ -6013,13 +6485,13 @@ function updateDDMonitor() {
   if (el_pct) {
     el_pct.textContent = ddPct.toFixed(1) + '%';
     document.getElementById('dd-fill').style.width = Math.min(ddPct * 6.67, 100) + '%';
-    document.getElementById('dd-peak').textContent = '$' + peak.toFixed(0);
-    document.getElementById('dd-max').textContent = '$' + s.dd.toFixed(0);
+    document.getElementById('dd-peak').textContent = fmtCurrency(peak);
+    document.getElementById('dd-max').textContent = fmtCurrency(s.dd);
     const consec = getConsecLosses();
     document.getElementById('dd-consecloss').textContent = consec;
     document.getElementById('dd-consecloss').style.color = consec >= 3 ? 'var(--red)' : 'var(--text)';
     const recovery = curDD > 0 ? (curDD / (1 - ddPct/100)).toFixed(0) : '—';
-    document.getElementById('dd-recovery').textContent = curDD > 0 ? '$' + recovery : 'At Peak';
+    document.getElementById('dd-recovery').textContent = curDD > 0 ? fmtCurrency(parseFloat(recovery)) : 'At Peak';
   }
 }
 
@@ -6235,7 +6707,7 @@ const TF_DATA = {
     ]
   },
   thisyear: {
-    label:'2026 Outlook',
+    label:'2026 Outlook · Prices as of Jun 2024 — connect live data for current values',
     assets:[
       { name:'S&P 500', price:'5,430', chg:'+8.2%', pos:true, fill:82 },
       { name:'Gold', price:'2,310', chg:'+14%', pos:true, fill:100 },
@@ -6983,7 +7455,7 @@ function runScreener() {
     (!trend || r.trend  === trend) &&
     r.rsi >= rsiMin && r.rsi <= rsiMax &&
     r.chg >= chgMin && r.chg <= chgMax &&
-    r.vol  >= volMin
+    (r.vol === null || r.vol >= volMin)  // null vol (live stocks without WS feed) pass through
   );
 
   // Sort: Strong Buy first, then Buy, Neutral, Sell, Strong Sell
@@ -7009,7 +7481,7 @@ function runScreener() {
           </div>`}
         </td>
         <td>${r.fxOnly ? '<span style="color:var(--text3);font-size:12px">—</span>' : `<span style="font-size:11px;font-weight:600;color:${r.macd==='Bullish'?'var(--green)':'var(--red)'}">${r.macd === 'Bullish' ? '▲' : '▼'} ${r.macd}</span>`}</td>
-        <td style="font-family:var(--font-mono);font-size:12px;color:${r.fxOnly ? 'var(--text3)' : r.vol >= 3 ? 'var(--yellow)' : r.vol >= 2 ? 'var(--text2)' : 'var(--text3)'}">${r.fxOnly ? '—' : r.vol + '×'}</td>
+        <td style="font-family:var(--font-mono);font-size:12px;color:${r.fxOnly || r.vol === null ? 'var(--text3)' : r.vol >= 3 ? 'var(--yellow)' : r.vol >= 2 ? 'var(--text2)' : 'var(--text3)'}">${r.fxOnly || r.vol === null ? '—' : r.vol + '×'}</td>
         <td>${r.fxOnly ? '<span style="color:var(--text3);font-size:12px">—</span>' : `<span style="font-size:11px;font-weight:500;color:${r.trend==='Uptrend'?'var(--green)':r.trend==='Downtrend'?'var(--red)':'var(--text3)'}">${r.trend==='Uptrend'?'↑':r.trend==='Downtrend'?'↓':'↔'} ${r.trend}</span>`}</td>
         <td>${r.fxOnly ? '<span style="font-size:10px;color:var(--text3);font-style:italic">Price only</span>' : `<span class="signal-badge ${signalMap[r.signal]||'signal-neutral'}">${r.signal}</span>`}</td>
         <td>
@@ -8874,8 +9346,12 @@ window.addEventListener('appinstalled',()=>{
 
 // Service worker via blob (works on GitHub Pages)
 if('serviceWorker' in navigator){
-  const SW=`
-const VER='tj-v2';
+  // SW registration only works over HTTP/HTTPS (not file://)
+  // blob: URL registration is rejected by Chrome — use inline blob only as a last resort
+  const isHTTP = location.protocol === 'https:' || location.protocol === 'http:';
+  if(isHTTP){
+    const SW=`
+const VER='tj-v9';
 const FILES=[self.registration.scope];
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(VER).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()));
@@ -8890,8 +9366,13 @@ self.addEventListener('fetch',e=>{
     return hit||net;
   }));
 });`;
-  const swURL=URL.createObjectURL(new Blob([SW],{type:'text/javascript'}));
-  navigator.serviceWorker.register(swURL,{scope:'./'}).catch(()=>{});
+    try{
+      const swURL=URL.createObjectURL(new Blob([SW],{type:'text/javascript'}));
+      navigator.serviceWorker.register(swURL,{scope:'./'})
+        .then(()=>console.log('[ZenJournal] SW registered for offline support'))
+        .catch(e=>console.warn('[ZenJournal] SW registration failed:',e.message));
+    } catch(e){ console.warn('[ZenJournal] SW blob error:',e.message); }
+  }
 }
 
 // PWA manifest blob
@@ -9418,7 +9899,7 @@ async function saveTrade() {
 
   <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:8px">ABOUT</div>
   <div style="font-size:12px;color:var(--text3);line-height:1.6">
-    Zen Trading Journal v8.0<br>
+    Zen Trading Journal v9.0<br>
     All data stored locally on your device.<br>
     No accounts. No cloud. No noise.<br><br>
     <em style="color:var(--text3)">Presence · Process · Progress</em>
@@ -9590,81 +10071,176 @@ async function saveTrade() {
 
 <!-- ══ ANGEL ONE SETUP OVERLAY ══ -->
 <div id="angelOneOverlay">
-<div id="angelOneOverlay">
-  <div style="background:var(--bg2);border:1px solid rgba(34,211,238,0.25);border-radius:16px;padding:28px;max-width:560px;width:100%;animation:fadeSlideUp 0.2s ease;max-height:90vh;overflow-y:auto">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+  <div style="background:var(--bg2);border:1px solid rgba(34,211,238,0.25);border-radius:16px;padding:28px;max-width:600px;width:100%;animation:fadeSlideUp 0.2s ease;max-height:92vh;overflow-y:auto">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
       <div style="display:flex;align-items:center;gap:12px">
-        <div style="width:42px;height:42px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid rgba(34,211,238,0.3)">⚙️</div>
+        <div style="width:44px;height:44px;background:linear-gradient(135deg,#ff8c0020,#ff8c0008);border:1px solid rgba(255,140,0,0.35);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🔶</div>
         <div>
-          <div style="font-family:var(--font-head);font-size:18px">GitHub Actions Data Feed</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">NSE live data fetched every minute — no server, no bridge</div>
+          <div style="font-family:var(--font-head);font-size:18px;font-weight:600">Angel One — Live NSE Data</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">GitHub Actions fetches NSE data every minute · free · no server needed</div>
         </div>
       </div>
-      <button onclick="closeAngelOneSetup()" style="background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer">×</button>
+      <button onclick="closeAngelOneSetup()" style="background:none;border:none;color:var(--text3);font-size:24px;cursor:pointer;line-height:1">×</button>
     </div>
 
-    <!-- Live Status -->
-    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:20px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <div style="width:8px;height:8px;border-radius:50%;background:var(--text3)" id="ao-ws-dot"></div>
-        <span id="ao-ws-status-text" style="font-size:12px;color:var(--text2)">Checking data.json…</span>
-      </div>
-      <div style="font-size:10px;color:var(--text3)">data.json is written by GitHub Actions every minute and served by GitHub Pages</div>
+    <!-- Live status pill -->
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:11px 14px;margin-bottom:22px;display:flex;align-items:center;gap:10px">
+      <div style="width:9px;height:9px;border-radius:50%;flex-shrink:0;transition:background 0.3s" id="ao-ws-dot"></div>
+      <span id="ao-ws-status-text" style="font-size:12px;color:var(--text2);flex:1">Checking data.json…</span>
+      <button onclick="checkGHDataStatus()" style="background:none;border:1px solid var(--border);color:var(--text3);font-size:11px;padding:3px 8px;border-radius:4px;cursor:pointer">Recheck</button>
     </div>
 
-    <!-- How it works -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
-        <div style="font-size:22px;margin-bottom:6px">📁</div>
-        <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:3px">1. Push files</div>
-        <div style="font-size:10px;color:var(--text3)">Push all 5 files to your GitHub repo</div>
-      </div>
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
-        <div style="font-size:22px;margin-bottom:6px">🔑</div>
-        <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:3px">2. Add Secrets</div>
-        <div style="font-size:10px;color:var(--text3)">Repo → Settings → Secrets → add Angel One keys</div>
-      </div>
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
-        <div style="font-size:22px;margin-bottom:6px">🟢</div>
-        <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:3px">3. Auto runs</div>
-        <div style="font-size:10px;color:var(--text3)">Actions fetches NSE data every minute automatically</div>
-      </div>
+    <!-- Step tabs -->
+    <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--bg3);padding:4px;border-radius:8px" id="ao-step-tabs">
+      <button onclick="aoShowStep(1)" id="ao-tab-1" class="btn" style="flex:1;justify-content:center;font-size:12px;padding:7px;background:var(--accent);border:none;color:white">1 · Get Files</button>
+      <button onclick="aoShowStep(2)" id="ao-tab-2" class="btn btn-ghost" style="flex:1;justify-content:center;font-size:12px;padding:7px">2 · GitHub Setup</button>
+      <button onclick="aoShowStep(3)" id="ao-tab-3" class="btn btn-ghost" style="flex:1;justify-content:center;font-size:12px;padding:7px">3 · Secrets</button>
+      <button onclick="aoShowStep(4)" id="ao-tab-4" class="btn btn-ghost" style="flex:1;justify-content:center;font-size:12px;padding:7px">4 · Verify</button>
     </div>
 
-    <!-- Secrets to add -->
-    <div style="background:rgba(34,211,238,0.05);border:1px solid rgba(34,211,238,0.15);border-radius:8px;padding:14px;margin-bottom:16px">
-      <div style="font-size:11px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Required GitHub Secrets (Settings → Secrets → Actions)</div>
-      <div style="display:flex;flex-direction:column;gap:6px;font-size:11px;font-family:var(--font-mono)">
-        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--bg4);border-radius:4px">
-          <span style="color:var(--accent2)">AO_CLIENT_CODE</span><span style="color:var(--text3)">Your Angel One login ID</span>
+    <!-- ── STEP 1: Download files ── -->
+    <div id="ao-step-1">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+        Download these two files. You'll push them alongside <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">index.html</code> to your GitHub repo.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px">
+          <div style="font-size:22px;margin-bottom:8px">🐍</div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">fetch_market.py</div>
+          <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-bottom:12px">Logs into Angel One SmartAPI, fetches NSE indices + movers + F&amp;O chain, pushes <code style="background:var(--bg4);padding:1px 4px;border-radius:3px">data.json</code> to your repo. Pure stdlib — no pip installs.</div>
+          <button onclick="downloadPythonScript()" class="btn btn-primary" style="width:100%;justify-content:center;font-size:12px">⬇ Download fetch_market.py</button>
         </div>
-        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--bg4);border-radius:4px">
-          <span style="color:var(--accent2)">AO_API_KEY</span><span style="color:var(--text3)">From smartapi.angelbroking.com</span>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px">
+          <div style="font-size:22px;margin-bottom:8px">⚙️</div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">fetch_market.yml</div>
+          <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-bottom:12px">GitHub Actions workflow. Runs <code style="background:var(--bg4);padding:1px 4px;border-radius:3px">fetch_market.py</code> every minute Mon–Fri during NSE market hours (09:00–15:30 IST). Uses free tier minutes.</div>
+          <button onclick="downloadWorkflowYML()" class="btn btn-primary" style="width:100%;justify-content:center;font-size:12px">⬇ Download fetch_market.yml</button>
         </div>
-        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--bg4);border-radius:4px">
-          <span style="color:var(--accent2)">AO_TOTP_SECRET</span><span style="color:var(--text3)">Base32 TOTP secret string</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--bg4);border-radius:4px">
-          <span style="color:var(--accent2)">AO_MPIN</span><span style="color:var(--text3)">Your 4-digit MPIN</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--bg4);border-radius:4px">
-          <span style="color:var(--accent2)">GH_PAT</span><span style="color:var(--text3)">GitHub Personal Access Token (repo scope)</span>
-        </div>
+      </div>
+      <button onclick="downloadBothFiles()" class="btn" style="width:100%;justify-content:center;background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.4);color:var(--accent2);font-size:13px;padding:10px">⬇ Download Both Files</button>
+      <div style="margin-top:16px;font-size:11px;color:var(--text3);display:flex;flex-direction:column;gap:5px">
+        <div>📁 After download: place <code style="background:var(--bg4);padding:1px 4px;border-radius:3px">fetch_market.py</code> in repo root, and <code style="background:var(--bg4);padding:1px 4px;border-radius:3px">fetch_market.yml</code> in <code style="background:var(--bg4);padding:1px 4px;border-radius:3px">.github/workflows/</code></div>
+      </div>
+      <div style="margin-top:16px;text-align:right">
+        <button onclick="aoShowStep(2)" class="btn btn-primary" style="font-size:12px">Next: GitHub Setup →</button>
       </div>
     </div>
 
-    <!-- Repo input -->
-    <div style="margin-bottom:16px">
-      <label style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px">Your GitHub Pages URL</label>
-      <input id="gh-repo-input" type="text" placeholder="e.g. https://yourusername.github.io/zen-journal/" class="ao-form-input">
+    <!-- ── STEP 2: GitHub repo setup ── -->
+    <div id="ao-step-2" style="display:none">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;gap:12px;align-items:flex-start">
+          <div style="background:var(--accent);color:white;font-size:11px;font-weight:700;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+          <div>
+            <div style="font-weight:600;font-size:13px;margin-bottom:3px">Create a GitHub repository</div>
+            <div style="font-size:12px;color:var(--text3);line-height:1.5">Go to <a href="https://github.com/new" target="_blank" style="color:var(--accent2)">github.com/new</a>. Make it <strong style="color:var(--text)">Public</strong> so GitHub Pages works. Name it anything (e.g. <code style="background:var(--bg4);padding:1px 4px;border-radius:3px">zen-journal</code>).</div>
+          </div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;gap:12px;align-items:flex-start">
+          <div style="background:var(--accent);color:white;font-size:11px;font-weight:700;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+          <div>
+            <div style="font-weight:600;font-size:13px;margin-bottom:3px">Push the three files</div>
+            <div style="font-size:12px;color:var(--text3);line-height:1.5">Push to repo root: <code style="background:var(--bg4);padding:1px 4px;border-radius:3px">index.html</code>, <code style="background:var(--bg4);padding:1px 4px;border-radius:3px">fetch_market.py</code><br>Push to <code style="background:var(--bg4);padding:1px 4px;border-radius:3px">.github/workflows/</code>: <code style="background:var(--bg4);padding:1px 4px;border-radius:3px">fetch_market.yml</code></div>
+          </div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;gap:12px;align-items:flex-start">
+          <div style="background:var(--accent);color:white;font-size:11px;font-weight:700;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+          <div>
+            <div style="font-weight:600;font-size:13px;margin-bottom:3px">Enable GitHub Pages</div>
+            <div style="font-size:12px;color:var(--text3);line-height:1.5">Repo → <strong style="color:var(--text)">Settings → Pages</strong> → Source: <strong style="color:var(--text)">Deploy from branch → main → / (root)</strong>. Your journal URL will be <code style="background:var(--bg4);padding:1px 4px;border-radius:3px">https://username.github.io/repo-name/</code></div>
+          </div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;gap:12px;align-items:flex-start">
+          <div style="background:var(--accent);color:white;font-size:11px;font-weight:700;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
+          <div>
+            <div style="font-weight:600;font-size:13px;margin-bottom:3px">Create a Personal Access Token (PAT)</div>
+            <div style="font-size:12px;color:var(--text3);line-height:1.5">Go to <a href="https://github.com/settings/tokens/new" target="_blank" style="color:var(--accent2)">github.com/settings/tokens/new</a> → Note: <em>zen-journal</em> → Expiration: <em>No expiration</em> → check <strong style="color:var(--text)">repo</strong> scope → Generate. <strong style="color:var(--yellow)">Copy it now</strong> — you won't see it again.</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="aoShowStep(1)" class="btn btn-ghost" style="font-size:12px">← Back</button>
+        <button onclick="aoShowStep(3)" class="btn btn-primary" style="font-size:12px;margin-left:auto">Next: Add Secrets →</button>
+      </div>
     </div>
 
-    <div style="display:flex;gap:10px">
-      <button onclick="clearAngelOneCreds()" class="btn btn-ghost" style="flex:1;justify-content:center;color:var(--red);border-color:rgba(245,101,101,0.3)">🗑 Clear</button>
-      <button onclick="saveGHSettings()" class="btn btn-primary" style="flex:2;justify-content:center">✅ Save &amp; Check Status</button>
+    <!-- ── STEP 3: GitHub Secrets ── -->
+    <div id="ao-step-3" style="display:none">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Repo → <strong style="color:var(--text)">Settings → Secrets and variables → Actions → New repository secret</strong>. Add each of these:</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px">
+        <div style="display:grid;grid-template-columns:160px 1fr;gap:8px;align-items:start;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 12px">
+          <code style="color:var(--accent2);font-size:12px">AO_CLIENT_CODE</code>
+          <span style="font-size:12px;color:var(--text3)">Your Angel One login ID (e.g. A123456)</span>
+        </div>
+        <div style="display:grid;grid-template-columns:160px 1fr;gap:8px;align-items:start;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 12px">
+          <code style="color:var(--accent2);font-size:12px">AO_API_KEY</code>
+          <span style="font-size:12px;color:var(--text3)">From <a href="https://smartapi.angelbroking.com" target="_blank" style="color:var(--accent2)">smartapi.angelbroking.com</a> → My Profile → API Key</span>
+        </div>
+        <div style="display:grid;grid-template-columns:160px 1fr;gap:8px;align-items:start;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 12px">
+          <code style="color:var(--accent2);font-size:12px">AO_TOTP_SECRET</code>
+          <span style="font-size:12px;color:var(--text3)">The Base32 secret string shown when you set up authenticator on Angel One — <em>not</em> the 6-digit OTP itself</span>
+        </div>
+        <div style="display:grid;grid-template-columns:160px 1fr;gap:8px;align-items:start;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 12px">
+          <code style="color:var(--accent2);font-size:12px">AO_MPIN</code>
+          <span style="font-size:12px;color:var(--text3)">Your 4-digit Angel One MPIN</span>
+        </div>
+        <div style="display:grid;grid-template-columns:160px 1fr;gap:8px;align-items:start;background:var(--bg3);border:1px solid rgba(108,99,255,0.3);border-radius:6px;padding:10px 12px">
+          <code style="color:var(--accent2);font-size:12px">GH_PAT</code>
+          <span style="font-size:12px;color:var(--text3)">The Personal Access Token you created in Step 2 — needed to write <code style="background:var(--bg4);padding:1px 4px;border-radius:3px">data.json</code></span>
+        </div>
+      </div>
+      <div style="background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:11px;color:var(--text2);line-height:1.6">
+        ⚠ <strong style="color:var(--yellow)">TOTP Secret:</strong> In Angel One app → Profile → Enable TOTP → it shows a QR code and below it a <em>text key</em> (Base32 string like <code style="background:var(--bg4);padding:1px 4px;border-radius:3px">JBSWY3DPEHPK3PXP</code>). That string is your <code style="background:var(--bg4);padding:1px 4px;border-radius:3px">AO_TOTP_SECRET</code> — copy it before scanning the QR.
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:6px">Your GitHub Pages URL (to verify data.json)</label>
+        <input id="gh-repo-input" type="text" placeholder="https://yourusername.github.io/zen-journal/" class="ao-form-input">
+        <div style="font-size:10px;color:var(--text3);margin-top:4px">This is only used locally to verify connectivity. Not stored on any server.</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="aoShowStep(2)" class="btn btn-ghost" style="font-size:12px">← Back</button>
+        <button onclick="saveGHSettingsAndVerify()" class="btn btn-primary" style="font-size:12px;margin-left:auto">Save &amp; Run Workflow →</button>
+      </div>
     </div>
+
+    <!-- ── STEP 4: Verify / Run ── -->
+    <div id="ao-step-4" style="display:none">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;gap:12px;align-items:flex-start">
+          <div style="background:rgba(74,222,128,0.15);color:var(--green);font-size:11px;font-weight:700;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+          <div>
+            <div style="font-weight:600;font-size:13px;margin-bottom:3px">Run the workflow manually once</div>
+            <div style="font-size:12px;color:var(--text3);line-height:1.5">Repo → <strong style="color:var(--text)">Actions</strong> tab → click <strong style="color:var(--text)">Fetch NSE Market Data</strong> → <strong style="color:var(--text)">Run workflow</strong>. It should complete in ~30 seconds. Check the logs for "Done!"</div>
+          </div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;gap:12px;align-items:flex-start">
+          <div style="background:rgba(74,222,128,0.15);color:var(--green);font-size:11px;font-weight:700;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+          <div>
+            <div style="font-weight:600;font-size:13px;margin-bottom:3px">Check data.json appeared</div>
+            <div style="font-size:12px;color:var(--text3);line-height:1.5">After the run, visit <code id="ao-data-json-url" style="background:var(--bg4);padding:1px 4px;border-radius:3px;color:var(--accent2)">https://yoursite.github.io/repo/data.json</code> in your browser. You should see JSON with index data.</div>
+          </div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;gap:12px;align-items:flex-start">
+          <div style="background:rgba(74,222,128,0.15);color:var(--green);font-size:11px;font-weight:700;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+          <div>
+            <div style="font-weight:600;font-size:13px;margin-bottom:3px">Verify live status below</div>
+            <div style="font-size:12px;color:var(--text3);line-height:1.5">Click <strong style="color:var(--text)">Recheck Status</strong>. The dot at the top should go green. From now on, during market hours the workflow runs every minute automatically.</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <button onclick="aoShowStep(3)" class="btn btn-ghost" style="font-size:12px">← Back</button>
+        <button onclick="checkGHDataStatus()" class="btn btn-primary" style="flex:1;justify-content:center;font-size:13px">🔄 Recheck Status</button>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="clearAngelOneCreds()" class="btn btn-ghost" style="flex:1;justify-content:center;color:var(--red);border-color:rgba(245,101,101,0.3);font-size:12px">🗑 Clear Settings</button>
+        <button onclick="closeAngelOneSetup()" class="btn" style="flex:2;justify-content:center;background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.3);color:var(--green);font-size:13px">✅ Done — Close</button>
+      </div>
+    </div>
+
   </div>
 </div>
-
 </body>
 </html>

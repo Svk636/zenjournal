@@ -2,13 +2,13 @@ name: Fetch NSE Market Data
 
 on:
   schedule:
-    # Every minute, Mon–Fri, 3:45 AM – 10:00 AM UTC (= 9:15 AM – 3:30 PM IST)
-    - cron: '* 3-9 * * 1-5'
-    - cron: '0-30 10 * * 1-5'
-  workflow_dispatch:   # Allow manual trigger from Actions tab
+    - cron: '45-59 3 * * 1-5'
+    - cron: '* 4-9 * * 1-5'
+    - cron: '0 10 * * 1-5'
+  workflow_dispatch:
 
 permissions:
-  contents: write      # Needed to commit data.json back to repo
+  contents: write
 
 jobs:
   fetch:
@@ -18,8 +18,6 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GH_PAT }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -28,7 +26,13 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: pip install smartapi-python pyotp requests
+        run: pip install -r requirements.txt
+
+      - name: Debug Environment
+        run: |
+          python --version
+          pip --version
+          ls -la
 
       - name: Fetch market data
         env:
@@ -40,9 +44,12 @@ jobs:
 
       - name: Commit data.json
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data.json
-          # Only commit if data.json actually changed
-          git diff --staged --quiet || git commit -m "chore: update market data [skip ci]"
-          git push
+          if [ -f data.json ]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add data.json
+            git diff --staged --quiet || git commit -m "chore: update market data [skip ci]"
+            git push
+          else
+            echo "data.json not found, skipping commit"
+          fi

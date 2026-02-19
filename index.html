@@ -3893,30 +3893,31 @@ console.log('✅ Live Data Engine loaded — Finnhub + Alpha Vantage + CoinGecko
   <!-- ── ANGEL ONE SETUP INFO ── -->
   <div class="angel-config-box" id="ao-config-section">
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
-      <div style="width:44px;height:44px;background:linear-gradient(135deg,#ff8c00,#ff4500);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🔶</div>
+      <div style="width:44px;height:44px;background:linear-gradient(135deg,#1a1a2e,#0d1117);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:1px solid rgba(34,211,238,0.3)">⚙️</div>
       <div>
-        <div style="font-family:var(--font-head);font-size:17px;font-weight:400">Angel One SmartAPI</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px">Real-time NSE/BSE WebSocket feed · F&amp;O Chain · Live Indices · Top Movers</div>
+        <div style="font-family:var(--font-head);font-size:17px;font-weight:400">GitHub Actions — NSE Live Data</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Scheduled workflow runs every minute · fetches NSE indices, movers, F&amp;O · writes data.json · zero cost</div>
       </div>
-      <button onclick="openAngelOneSetup()" class="btn btn-primary" style="margin-left:auto;background:linear-gradient(135deg,#ff8c00,#ff6500)">Configure →</button>
+      <button onclick="openAngelOneSetup()" class="btn btn-primary" style="margin-left:auto">Setup Guide →</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:12px">
       <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:12px">
-        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Step 1 — Get API Key</div>
-        <div style="color:var(--text2);line-height:1.6">Go to <strong style="color:var(--accent2)">smartapi.angelbroking.com</strong> → My Apps → Create App → Copy your API Key</div>
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Step 1 — Push Files</div>
+        <div style="color:var(--text2);line-height:1.6">Push <strong style="color:var(--accent2)">index.html</strong>, <strong style="color:var(--accent2)">fetch_market.py</strong>, and <strong style="color:var(--accent2)">.github/workflows/fetch_market.yml</strong> to your repo</div>
       </div>
       <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:12px">
-        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Step 2 — Install Python Bridge</div>
-        <div style="color:var(--text2);line-height:1.6">Run <code style="background:var(--bg4);padding:1px 5px;border-radius:3px;font-size:11px">pip install smartapi-python websockets pyotp</code> in your terminal</div>
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Step 2 — Add Secrets</div>
+        <div style="color:var(--text2);line-height:1.6">Repo → <strong style="color:var(--accent2)">Settings → Secrets → Actions</strong>. Add: <code style="font-size:10px;background:var(--bg4);padding:1px 4px;border-radius:3px">AO_CLIENT_CODE, AO_API_KEY, AO_TOTP_SECRET, AO_MPIN, GH_PAT</code></div>
       </div>
       <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:12px">
-        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Step 3 — Run Bridge</div>
-        <div style="color:var(--text2);line-height:1.6">Download <strong style="color:var(--accent2)">angel_bridge.py</strong> → Fill credentials → Run → This journal auto-connects via WebSocket</div>
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Step 3 — Enable &amp; Run</div>
+        <div style="color:var(--text2);line-height:1.6">Go to <strong style="color:var(--accent2)">Actions tab</strong> → enable workflows → click <strong style="color:var(--accent2)">Run workflow</strong> once manually to test</div>
       </div>
     </div>
-    <div style="margin-top:12px;font-size:11px;color:var(--text3);display:flex;align-items:center;gap:8px">
-      <span style="color:var(--green)">✓</span> Free tier data via Finnhub &amp; CoinGecko loads automatically without any setup
-      <span style="margin-left:16px;color:var(--yellow)">⚠</span> Angel One WebSocket requires the Python bridge running locally
+    <div style="margin-top:12px;font-size:11px;color:var(--text3);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="color:var(--green)">✓</span> Free — 2,000 Action minutes/month on GitHub free tier
+      <span style="margin-left:12px;color:var(--green)">✓</span> NSE market hours only — workflow auto-skips weekends &amp; holidays
+      <span style="margin-left:12px;color:var(--green)">✓</span> Crypto + Forex + US markets load without any setup
     </div>
   </div>
 </div>
@@ -4407,83 +4408,95 @@ async function loadAllLiveData(){ loadLiveFearGreed(); loadLiveCrypto(); loadLiv
 // ═══════════════════════════════════════════════════════════════
 //   FLOATING TICKER STRIP — LIVE MULTI-ASSET
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+//   ANGEL ONE — DIRECT BROWSER REST API (no bridge, no VPS)
+//   Calls Angel One SmartAPI directly from the browser.
+//   Auth: TOTP generated in-browser via otpauth library.
+// ═══════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════
+//   GITHUB ACTIONS DATA ENGINE
+//   Reads data.json written by the scheduled GitHub Actions workflow.
+//   Refreshes every 60s. Falls back to free APIs for crypto/forex/US.
+// ═══════════════════════════════════════════════════════════════
+
+const GH_DATA_URL = './data.json';   // served by GitHub Pages from repo root
+
+const GHData = {
+  cache: null,
+  lastFetch: 0,
+
+  async get() {
+    // Cache for 55s (Actions runs every 60s)
+    if (GHData.cache && Date.now() - GHData.lastFetch < 55000) return GHData.cache;
+    try {
+      const r = await fetch(GH_DATA_URL + '?t=' + Date.now());
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      GHData.cache = d;
+      GHData.lastFetch = Date.now();
+      return d;
+    } catch(e) {
+      console.warn('GHData fetch error:', e.message);
+      return GHData.cache || null;
+    }
+  },
+};
+
+// ── FLOATING TICKER ──────────────────────────────────────────────
 const FT = {
-  ws: null,
-  angelData: {},
   lastFtBuild: 0,
 
   async build() {
     const track = document.getElementById('ftTrack');
     if (!track) return;
-
-    // Gather data from all sources
     const items = [];
 
-    // -- Angel One / NSE indices (from WS if connected, else static)
-    const nseItems = [
-      { sym:'NIFTY', label:'NIFTY 50', flag:'🇮🇳' },
-      { sym:'BANKNIFTY', label:'BANKNIFTY', flag:'🇮🇳' },
-      { sym:'SENSEX', label:'SENSEX', flag:'🇮🇳' },
-    ];
-    nseItems.forEach(n => {
-      const d = FT.angelData[n.sym];
-      if (d) {
-        const up = d.chg >= 0;
-        items.push({ flag:n.flag, sym:n.label, price:fmtNum(d.ltp), chg:(up?'+':'')+d.chg.toFixed(2)+'%', up });
-      } else {
-        items.push({ flag:n.flag, sym:n.label, price:'—', chg:'—', up:true });
+    // NSE from GitHub Actions data.json
+    try {
+      const d = await GHData.get();
+      if (d && d.indices) {
+        const map = { NIFTY50:'NIFTY 50', BANKNIFTY:'BANKNIFTY', SENSEX:'SENSEX' };
+        Object.entries(map).forEach(([key, label]) => {
+          const idx = d.indices[key];
+          if (!idx) return;
+          const up = idx.chg >= 0;
+          items.push({ flag:'🇮🇳', sym:label, price:fmtNum(idx.ltp), chg:(up?'+':'')+idx.chg.toFixed(2)+'%', up });
+        });
       }
-    });
+    } catch(e){}
 
-    // Section separator
     items.push({ sep:'US MKT' });
-
-    // -- US via Finnhub
     if (LiveData.hasFinnhub()) {
       try {
-        const syms = ['SPY','QQQ','DIA','VIX'];
-        const labels = { SPY:'S&P 500', QQQ:'NASDAQ', DIA:'DOW', VIX:'VIX' };
-        const quotes = await LiveData.fetchBatchQuotes(syms);
-        syms.forEach(s => {
-          const q = quotes[s];
-          if (!q || !q.c) return;
+        const quotes = await LiveData.fetchBatchQuotes(['SPY','QQQ','DIA']);
+        const labels = { SPY:'S&P 500', QQQ:'NASDAQ', DIA:'DOW' };
+        ['SPY','QQQ','DIA'].forEach(s => {
+          const q = quotes[s]; if (!q?.c) return;
           const chg = q.pc ? ((q.c-q.pc)/q.pc*100) : (q.dp||0);
           const up = chg >= 0;
-          items.push({ flag:'🇺🇸', sym:labels[s]||s, price:'$'+q.c.toFixed(2), chg:(up?'+':'')+chg.toFixed(2)+'%', up });
+          items.push({ flag:'🇺🇸', sym:labels[s], price:'$'+q.c.toFixed(2), chg:(up?'+':'')+chg.toFixed(2)+'%', up });
         });
       } catch(e){}
     }
 
-    // Section separator
     items.push({ sep:'CRYPTO' });
-
-    // -- Crypto via CoinGecko
     try {
       const cg = await LiveData.fetchCryptoPrices();
       if (cg) {
-        [['bitcoin','BTC'],['ethereum','ETH'],['solana','SOL'],['binancecoin','BNB']].forEach(([id,sym]) => {
-          if (!cg[id]) return;
-          const p = cg[id];
+        [['bitcoin','BTC'],['ethereum','ETH'],['solana','SOL']].forEach(([id,sym]) => {
+          const p = cg[id]; if (!p) return;
           const up = p.usd_24h_change >= 0;
           items.push({ flag:'₿', sym, price:'$'+fmtPrice(p.usd), chg:(up?'+':'')+p.usd_24h_change?.toFixed(2)+'%', up });
         });
       }
     } catch(e){}
 
-    // Section separator
     items.push({ sep:'FOREX' });
-
-    // -- Forex via Frankfurter
     try {
       const fx = await LiveData.fetchForexRates();
       if (fx) {
-        const fxMap = [
-          ['INR','USD/INR', v => v.toFixed(2)],
-          ['EUR','EUR/USD', v => (1/v).toFixed(4)],
-          ['GBP','GBP/USD', v => (1/v).toFixed(4)],
-          ['JPY','USD/JPY', v => v.toFixed(2)],
-        ];
-        fxMap.forEach(([k,label,fmt]) => {
+        [['INR','USD/INR',v=>v.toFixed(2)],['EUR','EUR/USD',v=>(1/v).toFixed(4)],['GBP','GBP/USD',v=>(1/v).toFixed(4)]].forEach(([k,label,fmt]) => {
           if (!fx[k]) return;
           items.push({ flag:'💱', sym:label, price:fmt(fx[k]), chg:'—', up:true });
         });
@@ -4491,18 +4504,10 @@ const FT = {
     } catch(e){}
 
     if (!items.length) return;
-
-    // Build HTML (doubled for seamless loop)
     const buildItem = it => {
       if (it.sep) return `<div class="ft-section-sep">${it.sep}</div>`;
-      return `<div class="ft-item">
-        <span class="ft-flag">${it.flag||''}</span>
-        <span class="ft-sym">${it.sym}</span>
-        <span class="ft-price">${it.price}</span>
-        <span class="ft-chg ${it.up?'up':'dn'}">${it.up&&it.chg!=='—'?'▲':'▼'} ${it.chg}</span>
-      </div>`;
+      return `<div class="ft-item"><span class="ft-flag">${it.flag||''}</span><span class="ft-sym">${it.sym}</span><span class="ft-price">${it.price}</span><span class="ft-chg ${it.up?'up':'dn'}">${it.up&&it.chg!=='—'?'▲':'▼'} ${it.chg}</span></div>`;
     };
-
     const half = items.map(buildItem).join('');
     track.innerHTML = half + half;
     FT.lastFtBuild = Date.now();
@@ -4510,67 +4515,19 @@ const FT = {
 
   start() {
     FT.build();
-    setInterval(FT.build, 60000); // refresh every 60s
-    FT.connectAngelWS();
+    setInterval(FT.build, 60000);
+    // Check GH data status
+    GHData.get().then(d => {
+      if (d) {
+        const dot = document.getElementById('ft-angel-dot');
+        const lbl = document.getElementById('ft-angel-label');
+        if (dot) dot.className = 'ao-dot live';
+        if (lbl) lbl.textContent = 'NSE Live ✓';
+      }
+    });
   },
-
-  connectAngelWS() {
-    const creds = getAngelCreds();
-    if (!creds.apiKey) {
-      document.getElementById('ft-angel-dot').className = 'ao-dot';
-      document.getElementById('ft-angel-label').textContent = 'Angel One (not set)';
-      return;
-    }
-    const host = localStorage.getItem('ao_bridge_host') || 'localhost';
-    const port = localStorage.getItem('ao_bridge_port') || '8765';
-    // Use wss:// if connecting to a remote host (GitHub Pages is HTTPS, requires secure WS)
-    const isRemote = host !== 'localhost' && host !== '127.0.0.1';
-    const proto = isRemote ? 'wss' : 'ws';
-    const wsUrl = `${proto}://${host}:${port}`;
-    const ws = new WebSocket(wsUrl);
-    FT.ws = ws;
-    ws.onopen = () => {
-      document.getElementById('ft-angel-dot').className = 'ao-dot live';
-      document.getElementById('ft-angel-label').textContent = 'Angel One ✓';
-      document.getElementById('conn-angelone-dot').className = 'lm-conn-dot live';
-      document.getElementById('lm-angel-status').innerHTML = '🟢 Angel One connected via bridge';
-      document.getElementById('lm-nse-status').textContent = '🟢 Live · Angel One';
-      document.getElementById('lm-nse-status').style.color = 'var(--green)';
-      const aoStatus = document.getElementById('ao-ws-dot');
-      if(aoStatus) { aoStatus.style.background='var(--green)'; document.getElementById('ao-ws-status-text').textContent='Connected to Python bridge'; }
-      ws.send(JSON.stringify({ type:'subscribe', symbols:['NIFTY','BANKNIFTY','SENSEX','NIFTYIT','MIDCPNIFTY','INDIAVIX'] }));
-    };
-    ws.onmessage = (e) => {
-      try {
-        const msg = JSON.parse(e.data);
-        if (msg.type === 'tick') {
-          const ticks = Array.isArray(msg.data) ? msg.data : [msg.data];
-          ticks.forEach(t => {
-            FT.angelData[t.symbol] = t;
-            updateLMIndexFromAngel(t);
-          });
-          if (Date.now() - FT.lastFtBuild > 5000) FT.build();
-        }
-        if (msg.type === 'fochain') {
-          renderFOChain(msg.data);
-        }
-        if (msg.type === 'movers') {
-          renderNSEMovers(msg.data);
-        }
-      } catch(err){}
-    };
-    ws.onerror = () => {
-      document.getElementById('ft-angel-dot').className = 'ao-dot';
-      document.getElementById('ft-angel-label').textContent = 'Angel One (bridge offline)';
-      document.getElementById('conn-angelone-dot').className = 'lm-conn-dot offline';
-    };
-    ws.onclose = () => {
-      document.getElementById('ft-angel-dot').className = 'ao-dot';
-      // retry after 10s
-      setTimeout(() => FT.connectAngelWS(), 10000);
-    };
-  }
 };
+
 
 function fmtNum(v) {
   if (v >= 10000) return v.toLocaleString('en-IN', {maximumFractionDigits:2});
@@ -4583,12 +4540,62 @@ function fmtNum(v) {
 async function refreshLiveMarkets() {
   document.getElementById('lm-last-updated').textContent = 'Updating…';
   await Promise.all([
+    loadLMNSE(),
     loadLMCrypto(),
     loadLMForex(),
     loadLMUSIndices(),
   ]);
   loadFOChain();
   document.getElementById('lm-last-updated').textContent = 'Updated: '+new Date().toLocaleTimeString('en-IN');
+}
+
+async function loadLMNSE() {
+  const st = document.getElementById('lm-nse-status');
+  const connDot = document.getElementById('conn-angelone-dot');
+  const angelStat = document.getElementById('lm-angel-status');
+  try {
+    const d = await GHData.get();
+    if (!d || !d.indices) throw new Error('No NSE data in data.json');
+
+    const age = Math.round((Date.now() - new Date(d.timestamp).getTime()) / 1000);
+    const fresh = age < 120;
+
+    // Update index cards
+    Object.entries(d.indices).forEach(([sym, idx]) => {
+      updateLMIndexFromAngel({ symbol: sym, ltp: idx.ltp, chg: idx.chg });
+    });
+
+    // Update movers
+    if (d.movers) renderNSEMovers(d.movers);
+
+    // Update F&O summary if available
+    if (d.fo) {
+      const pcrEl = document.getElementById('fo-pcr');
+      const mpEl  = document.getElementById('fo-maxpain');
+      const oiEl  = document.getElementById('fo-total-oi');
+      const sigEl = document.getElementById('fo-pcr-signal');
+      if (pcrEl) pcrEl.textContent = d.fo.pcr?.toFixed(2) || '—';
+      if (mpEl)  mpEl.textContent  = d.fo.maxpain ? fmtNum(d.fo.maxpain) : '—';
+      if (oiEl)  oiEl.textContent  = d.fo.totaloi ? (d.fo.totaloi/100000).toFixed(1)+'L' : '—';
+      if (sigEl) sigEl.textContent = d.fo.pcr > 1.2 ? 'Bullish' : d.fo.pcr < 0.8 ? 'Bearish' : 'Neutral';
+    }
+
+    if (st) { st.textContent = fresh ? '🟢 Live · GitHub Actions' : `🟡 Stale (${age}s old)`; st.style.color = fresh ? 'var(--green)' : 'var(--yellow)'; }
+    if (connDot) connDot.className = 'lm-conn-dot ' + (fresh ? 'live' : 'offline');
+    if (angelStat) angelStat.innerHTML = fresh
+      ? `🟢 NSE data via GitHub Actions — updated ${age}s ago`
+      : `🟡 Data is ${age}s old — check workflow`;
+
+    const ftDot = document.getElementById('ft-angel-dot');
+    const ftLbl = document.getElementById('ft-angel-label');
+    if (ftDot) ftDot.className = 'ao-dot' + (fresh ? ' live' : '');
+    if (ftLbl) ftLbl.textContent = fresh ? 'NSE Live ✓' : 'NSE (stale)';
+
+  } catch(e) {
+    if (st) { st.textContent = '⚫ data.json not found — run Actions workflow'; st.style.color = 'var(--text3)'; }
+    if (connDot) connDot.className = 'lm-conn-dot offline';
+    if (angelStat) angelStat.innerHTML = '⚫ GitHub Actions not set up — <a href="#" onclick="openAngelOneSetup()" style="color:var(--accent2)">Setup guide →</a>';
+  }
 }
 
 async function loadLMCrypto() {
@@ -4766,15 +4773,14 @@ function setMoverFilter(mode) {
 }
 
 function loadFOChain() {
-  if (FT.ws && FT.ws.readyState === WebSocket.OPEN) {
-    const sym = document.getElementById('fo-symbol-select')?.value || 'NIFTY';
-    const exp = document.getElementById('fo-expiry-select')?.value || 'weekly';
-    FT.ws.send(JSON.stringify({ type:'fochain', symbol:sym, expiry:exp }));
-    const st = document.getElementById('lm-fo-status');
-    if(st) { st.textContent='⟳ Requesting…'; st.style.color='var(--yellow)'; }
-  } else {
-    renderFOChainDemo();
-  }
+  // Try to load F&O data from data.json, fall back to demo
+  GHData.get().then(d => {
+    if (d && d.fo && d.fo.chain) {
+      renderFOChain(d.fo);
+    } else {
+      renderFOChainDemo();
+    }
+  }).catch(() => renderFOChainDemo());
 }
 
 function renderFOChainDemo() {
@@ -4854,291 +4860,62 @@ function renderNSEMovers(data) {
 }
 
 // ── ANGEL ONE CREDS & OVERLAY ───────────────────────────────────
-function getAngelCreds() {
-  return {
-    clientCode: localStorage.getItem('ao_client_code')||'',
-    apiKey:     localStorage.getItem('ao_api_key')||'',
-    totpSecret: localStorage.getItem('ao_totp_secret')||'',
-    mpin:       localStorage.getItem('ao_mpin')||'',
-  };
-}
+// ── GITHUB ACTIONS SETUP FUNCTIONS ──────────────────────────────
+
 function openAngelOneSetup() {
   const o = document.getElementById('angelOneOverlay');
   if (!o) return;
   o.classList.add('open');
-  const c = getAngelCreds();
-  document.getElementById('ao-client-code').value = c.clientCode;
-  document.getElementById('ao-api-key').value = c.apiKey;
-  document.getElementById('ao-totp-secret').value = c.totpSecret;
-  document.getElementById('ao-mpin').value = c.mpin;
-  document.getElementById('ao-bridge-host').value = localStorage.getItem('ao_bridge_host')||'';
-  document.getElementById('ao-bridge-port').value = localStorage.getItem('ao_bridge_port')||'8765';
-  // Try pinging bridge
-  pingAngelBridge();
+  // Populate saved values
+  const repo = localStorage.getItem('gh_repo') || '';
+  const el = document.getElementById('gh-repo-input');
+  if (el) el.value = repo;
+  checkGHDataStatus();
 }
+
 function closeAngelOneSetup() {
   const o = document.getElementById('angelOneOverlay');
   if (o) o.classList.remove('open');
 }
-function saveAngelOneCreds() {
-  const cc = document.getElementById('ao-client-code')?.value.trim();
-  const ak = document.getElementById('ao-api-key')?.value.trim();
-  const ts = document.getElementById('ao-totp-secret')?.value.trim();
-  const mp = document.getElementById('ao-mpin')?.value.trim();
-  const bh = document.getElementById('ao-bridge-host')?.value.trim();
-  const bp = document.getElementById('ao-bridge-port')?.value.trim();
-  if (cc) localStorage.setItem('ao_client_code', cc);
-  if (ak) localStorage.setItem('ao_api_key', ak);
-  if (ts) localStorage.setItem('ao_totp_secret', ts);
-  if (mp) localStorage.setItem('ao_mpin', mp);
-  if (bh) localStorage.setItem('ao_bridge_host', bh);
-  if (bp) localStorage.setItem('ao_bridge_port', bp);
+
+function saveGHSettings() {
+  const repo = document.getElementById('gh-repo-input')?.value.trim();
+  if (repo) localStorage.setItem('gh_repo', repo);
   closeAngelOneSetup();
-  showToast('✅ Angel One credentials saved — starting bridge connection…', 'success');
-  FT.connectAngelWS();
+  showToast('✅ Settings saved', 'success');
 }
+
 function clearAngelOneCreds() {
-  ['ao_client_code','ao_api_key','ao_totp_secret','ao_mpin'].forEach(k => localStorage.removeItem(k));
-  showToast('Angel One credentials cleared', 'info');
+  localStorage.removeItem('gh_repo');
+  showToast('Settings cleared', 'info');
 }
-function pingAngelBridge() {
-  const host = localStorage.getItem('ao_bridge_host') || 'localhost';
-  const port = localStorage.getItem('ao_bridge_port')||'8765';
-  const isRemote = host !== 'localhost' && host !== '127.0.0.1';
-  const proto = isRemote ? 'wss' : 'ws';
+
+async function checkGHDataStatus() {
   const dot = document.getElementById('ao-ws-dot');
   const txt = document.getElementById('ao-ws-status-text');
-  if(!dot||!txt) return;
+  if (!dot || !txt) return;
+  dot.style.background = 'var(--yellow)';
+  txt.textContent = 'Checking data.json…';
   try {
-    const ws = new WebSocket(`${proto}://${host}:${port}`);
-    ws.onopen = () => { dot.style.background='var(--green)'; txt.textContent=`Connected to bridge at ${host}:${port}`; ws.close(); };
-    ws.onerror = () => { dot.style.background='var(--red)'; txt.textContent=`Bridge not reachable at ${host}:${port} — is angel_bridge.py running?`; };
-  } catch(e) { dot.style.background='var(--red)'; txt.textContent='Cannot connect to bridge'; }
+    const d = await GHData.get();
+    if (d && d.timestamp) {
+      const age = Math.round((Date.now() - new Date(d.timestamp).getTime()) / 1000);
+      dot.style.background = age < 120 ? 'var(--green)' : 'var(--yellow)';
+      txt.textContent = age < 120
+        ? `✅ Live data — updated ${age}s ago (${d.source || 'GitHub Actions'})`
+        : `⚠ Data is ${age}s old — is Actions workflow running?`;
+    } else {
+      dot.style.background = 'var(--red)';
+      txt.textContent = '❌ data.json not found — run GitHub Actions workflow once first';
+    }
+  } catch(e) {
+    dot.style.background = 'var(--red)';
+    txt.textContent = '❌ Cannot reach data.json — deploy to GitHub Pages first';
+  }
 }
 
-function downloadAngelBridge() {
-  const creds = getAngelCreds();
-  const py = `#!/usr/bin/env python3
-"""
-Zen Journal — Angel One SmartAPI Bridge
-Run this script, then open your Zen Trading Journal in the browser.
-The journal auto-connects via WebSocket on localhost:8765.
-
-Install dependencies first:
-  pip install smartapi-python websockets pyotp requests
-
-Usage:
-  python angel_bridge.py
-"""
-
-import asyncio, json, logging, signal, sys, time
-import websockets
-from SmartApi import SmartConnect
-import pyotp
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
-log = logging.getLogger('AngelBridge')
-
-# ── CREDENTIALS ─────────────────────────────────────────────────
-# Fill these in OR set as environment variables
-CLIENT_CODE  = "${creds.clientCode || 'YOUR_CLIENT_CODE'}"
-API_KEY      = "${creds.apiKey || 'YOUR_API_KEY'}"
-TOTP_SECRET  = "${creds.totpSecret || 'YOUR_TOTP_BASE32_SECRET'}"
-MPIN         = "${creds.mpin || 'YOUR_MPIN'}"
-BRIDGE_PORT  = 8765
-
-# ── NSE Symbol token mapping (add more as needed) ──────────────
-NSE_TOKENS = {
-    "NIFTY":       {"token":"99926000","exchange":"NSE","symbolname":"Nifty 50"},
-    "BANKNIFTY":   {"token":"99926009","exchange":"NSE","symbolname":"Nifty Bank"},
-    "FINNIFTY":    {"token":"99926037","exchange":"NSE","symbolname":"Nifty Fin Service"},
-    "MIDCPNIFTY":  {"token":"99926074","exchange":"NSE","symbolname":"Nifty Midcap"},
-    "SENSEX":      {"token":"1","exchange":"BSE","symbolname":"Sensex"},
-    "INDIAVIX":    {"token":"99919000","exchange":"NSE","symbolname":"India VIX"},
-}
-
-# ── Global state ────────────────────────────────────────────────
-connected_clients = set()
-angel_obj = None
-auth_token = None
-last_prices = {}
-
-def authenticate():
-    """Authenticate with Angel One SmartAPI"""
-    global angel_obj, auth_token
-    totp = pyotp.TOTP(TOTP_SECRET).now()
-    angel_obj = SmartConnect(api_key=API_KEY)
-    session = angel_obj.generateSession(CLIENT_CODE, MPIN, totp)
-    if not session or session.get('status') == False:
-        raise Exception(f"Auth failed: {session}")
-    auth_token = session['data']['jwtToken']
-    log.info(f"✅ Authenticated as {CLIENT_CODE}")
-    return angel_obj
-
-def get_ltp(tokens_list):
-    """Fetch LTP for a list of {exchange, symboltoken} dicts"""
-    try:
-        resp = angel_obj.ltpData(tokens_list[0]['exchange'], tokens_list[0]['symboltoken'], tokens_list[0]['symboltoken'])
-        return resp
-    except Exception as e:
-        log.warning(f"LTP fetch error: {e}")
-        return None
-
-async def broadcast(message):
-    """Send message to all connected browser clients"""
-    if connected_clients:
-        dead = set()
-        for ws in connected_clients:
-            try:
-                await ws.send(json.dumps(message))
-            except:
-                dead.add(ws)
-        connected_clients -= dead
-
-async def price_loop():
-    """Continuously fetch prices and broadcast to clients"""
-    global last_prices
-    symbols = list(NSE_TOKENS.keys())
-    while True:
-        try:
-            ticks = []
-            for sym, info in NSE_TOKENS.items():
-                try:
-                    resp = angel_obj.ltpData(info['exchange'], info['symbolname'], info['token'])
-                    if resp and resp.get('status'):
-                        ltp = float(resp['data']['ltp'])
-                        prev = last_prices.get(sym, ltp)
-                        chg_pct = ((ltp - prev) / prev * 100) if prev else 0
-                        # For proper day change we'd need prev close — approximate here
-                        ticks.append({
-                            "symbol": sym,
-                            "ltp": ltp,
-                            "chg": round(chg_pct, 2),
-                            "token": info['token'],
-                            "exchange": info['exchange']
-                        })
-                        last_prices[sym] = ltp
-                except Exception as e:
-                    log.debug(f"Error fetching {sym}: {e}")
-                    continue
-            if ticks and connected_clients:
-                await broadcast({"type": "tick", "data": ticks})
-                log.info(f"Broadcast {len(ticks)} ticks to {len(connected_clients)} clients")
-        except Exception as e:
-            log.error(f"Price loop error: {e}")
-            try:
-                authenticate()
-            except:
-                pass
-        await asyncio.sleep(5)  # poll every 5 seconds
-
-async def get_fo_chain(symbol, expiry_type='weekly'):
-    """Fetch F&O option chain for a symbol"""
-    try:
-        # Use Angel One option chain API
-        resp = angel_obj.optionChain(symbol, expiry_type)
-        if not resp or not resp.get('status'):
-            return None
-        data = resp.get('data', {})
-        strikes = []
-        spot = data.get('underlyingValue', 0)
-        for row in data.get('optionChainData', []):
-            call = row.get('CE', {})
-            put  = row.get('PE', {})
-            strike = row.get('strikePrice', 0)
-            diff = abs(strike - spot)
-            strikes.append({
-                "strike": strike,
-                "atm": diff == min(abs(r.get('strikePrice',0)-spot) for r in data.get('optionChainData',[])),
-                "callOI":   call.get('openInterest', 0),
-                "callLTP":  call.get('lastPrice', 0),
-                "callPrevLTP": call.get('previousClose', 0),
-                "putOI":    put.get('openInterest', 0),
-                "putLTP":   put.get('lastPrice', 0),
-                "putPrevLTP": put.get('previousClose', 0),
-            })
-        total_call_oi = sum(s['callOI'] for s in strikes)
-        total_put_oi  = sum(s['putOI']  for s in strikes)
-        pcr = total_put_oi / total_call_oi if total_call_oi else 0
-        return {
-            "strikes": strikes,
-            "pcr": round(pcr, 2),
-            "totalOI": total_call_oi + total_put_oi,
-            "spotPrice": spot,
-        }
-    except Exception as e:
-        log.error(f"F&O chain error: {e}")
-        return None
-
-async def handler(websocket, path=None):
-    """Handle browser client connections"""
-    connected_clients.add(websocket)
-    log.info(f"Client connected — {len(connected_clients)} total")
-    try:
-        async for message in websocket:
-            try:
-                msg = json.loads(message)
-                if msg.get('type') == 'subscribe':
-                    syms = msg.get('symbols', [])
-                    log.info(f"Subscription: {syms}")
-                    await websocket.send(json.dumps({"type":"subscribed","symbols":syms}))
-
-                elif msg.get('type') == 'fochain':
-                    sym = msg.get('symbol','NIFTY')
-                    exp = msg.get('expiry','weekly')
-                    chain = await get_fo_chain(sym, exp)
-                    if chain:
-                        await websocket.send(json.dumps({"type":"fochain","data":chain}))
-                    else:
-                        await websocket.send(json.dumps({"type":"fochain","data":None,"error":"No data"}))
-
-            except json.JSONDecodeError:
-                pass
-    except websockets.exceptions.ConnectionClosed:
-        pass
-    finally:
-        connected_clients.discard(websocket)
-        log.info(f"Client disconnected — {len(connected_clients)} total")
-
-async def main():
-    log.info("="*60)
-    log.info("  Zen Journal — Angel One Bridge")
-    log.info(f"  Port: {BRIDGE_PORT}")
-    log.info("="*60)
-
-    # Authenticate
-    try:
-        authenticate()
-    except Exception as e:
-        log.error(f"❌ Authentication failed: {e}")
-        log.error("Check your CLIENT_CODE, API_KEY, TOTP_SECRET, MPIN")
-        sys.exit(1)
-
-    # Start WebSocket server + price loop concurrently
-    server = await websockets.serve(handler, "localhost", BRIDGE_PORT)
-    log.info(f"🟢 Bridge running on ws://localhost:{BRIDGE_PORT}")
-    log.info("   Open your Zen Trading Journal — it will auto-connect")
-    log.info("   Press Ctrl+C to stop")
-
-    await asyncio.gather(
-        server.wait_closed(),
-        price_loop()
-    )
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        log.info("Bridge stopped.")
-`;
-  const blob = new Blob([py], {type:'text/plain'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'angel_bridge.py';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('📥 Downloaded angel_bridge.py', 'success');
-}
+// Keep these as no-ops for backward compat
+function downloadAngelBridge() {}
 
 // FT.start() and live markets init are called from the boot IIFE below (after app boots)
 
@@ -9813,69 +9590,78 @@ async function saveTrade() {
 
 <!-- ══ ANGEL ONE SETUP OVERLAY ══ -->
 <div id="angelOneOverlay">
-  <div style="background:var(--bg2);border:1px solid rgba(255,140,0,0.3);border-radius:16px;padding:28px;max-width:520px;width:100%;animation:fadeSlideUp 0.2s ease;max-height:90vh;overflow-y:auto">
+<div id="angelOneOverlay">
+  <div style="background:var(--bg2);border:1px solid rgba(34,211,238,0.25);border-radius:16px;padding:28px;max-width:560px;width:100%;animation:fadeSlideUp 0.2s ease;max-height:90vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
       <div style="display:flex;align-items:center;gap:12px">
-        <div style="width:42px;height:42px;background:linear-gradient(135deg,#ff8c00,#ff4500);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px">🔶</div>
+        <div style="width:42px;height:42px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid rgba(34,211,238,0.3)">⚙️</div>
         <div>
-          <div style="font-family:var(--font-head);font-size:18px">Angel One SmartAPI</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">Live NSE/BSE feed via local Python bridge</div>
+          <div style="font-family:var(--font-head);font-size:18px">GitHub Actions Data Feed</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">NSE live data fetched every minute — no server, no bridge</div>
         </div>
       </div>
       <button onclick="closeAngelOneSetup()" style="background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer">×</button>
     </div>
 
-    <!-- Bridge Status -->
-    <div id="ao-bridge-status" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:18px;font-size:12px;color:var(--text2)">
-      <div style="display:flex;align-items:center;gap:8px">
-        <div style="width:8px;height:8px;border-radius:50%;background:var(--red)" id="ao-ws-dot"></div>
-        <span id="ao-ws-status-text">Python bridge not detected — run angel_bridge.py to connect</span>
+    <!-- Live Status -->
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--text3)" id="ao-ws-dot"></div>
+        <span id="ao-ws-status-text" style="font-size:12px;color:var(--text2)">Checking data.json…</span>
+      </div>
+      <div style="font-size:10px;color:var(--text3)">data.json is written by GitHub Actions every minute and served by GitHub Pages</div>
+    </div>
+
+    <!-- How it works -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:22px;margin-bottom:6px">📁</div>
+        <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:3px">1. Push files</div>
+        <div style="font-size:10px;color:var(--text3)">Push all 5 files to your GitHub repo</div>
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:22px;margin-bottom:6px">🔑</div>
+        <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:3px">2. Add Secrets</div>
+        <div style="font-size:10px;color:var(--text3)">Repo → Settings → Secrets → add Angel One keys</div>
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:22px;margin-bottom:6px">🟢</div>
+        <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:3px">3. Auto runs</div>
+        <div style="font-size:10px;color:var(--text3)">Actions fetches NSE data every minute automatically</div>
       </div>
     </div>
 
-    <div style="display:flex;flex-direction:column;gap:14px">
-      <div>
-        <label style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px">Angel One Client Code</label>
-        <input id="ao-client-code" type="text" placeholder="Your Angel One login ID" class="ao-form-input">
-      </div>
-      <div>
-        <label style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px">API Key</label>
-        <input id="ao-api-key" type="text" placeholder="From smartapi.angelbroking.com → My Apps" class="ao-form-input">
-      </div>
-      <div>
-        <label style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px">TOTP Secret <span style="font-weight:400;color:var(--text3)">(base32 from QR code)</span></label>
-        <input id="ao-totp-secret" type="password" placeholder="e.g. JBSWY3DPEHPK3PXP..." class="ao-form-input">
-        <div style="font-size:10px;color:var(--text3);margin-top:4px">The base32 secret string shown when you set up TOTP in Angel One app → Settings → 2FA</div>
-      </div>
-      <div>
-        <label style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px">MPIN</label>
-        <input id="ao-mpin" type="password" placeholder="Your 4-digit MPIN" class="ao-form-input">
-      </div>
-      <div>
-        <label style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px">Bridge Host <span style="font-weight:400;color:var(--text3)">(your Oracle VPS IP or domain)</span></label>
-        <input id="ao-bridge-host" type="text" placeholder="e.g. 152.67.x.x or yourdomain.com" class="ao-form-input">
-        <div style="font-size:10px;color:var(--text3);margin-top:4px">Leave blank to use localhost (local PC mode)</div>
-      </div>
-      <div>
-        <label style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px">Bridge Port <span style="font-weight:400;color:var(--text3)">(default: 8765)</span></label>
-        <input id="ao-bridge-port" type="number" value="8765" class="ao-form-input">
+    <!-- Secrets to add -->
+    <div style="background:rgba(34,211,238,0.05);border:1px solid rgba(34,211,238,0.15);border-radius:8px;padding:14px;margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Required GitHub Secrets (Settings → Secrets → Actions)</div>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:11px;font-family:var(--font-mono)">
+        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--bg4);border-radius:4px">
+          <span style="color:var(--accent2)">AO_CLIENT_CODE</span><span style="color:var(--text3)">Your Angel One login ID</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--bg4);border-radius:4px">
+          <span style="color:var(--accent2)">AO_API_KEY</span><span style="color:var(--text3)">From smartapi.angelbroking.com</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--bg4);border-radius:4px">
+          <span style="color:var(--accent2)">AO_TOTP_SECRET</span><span style="color:var(--text3)">Base32 TOTP secret string</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--bg4);border-radius:4px">
+          <span style="color:var(--accent2)">AO_MPIN</span><span style="color:var(--text3)">Your 4-digit MPIN</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--bg4);border-radius:4px">
+          <span style="color:var(--accent2)">GH_PAT</span><span style="color:var(--text3)">GitHub Personal Access Token (repo scope)</span>
+        </div>
       </div>
     </div>
 
-    <!-- Info box -->
-    <div style="background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:8px;padding:12px;margin:16px 0;font-size:11px;color:var(--text3);line-height:1.7">
-      <strong style="color:var(--accent2)">How it works:</strong><br>
-      1. Save credentials → Download <strong>angel_bridge.py</strong> below<br>
-      2. Install: <code style="background:var(--bg4);padding:1px 5px;border-radius:3px">pip install smartapi-python websockets pyotp</code><br>
-      3. Run: <code style="background:var(--bg4);padding:1px 5px;border-radius:3px">python angel_bridge.py</code> — keep it running in background<br>
-      4. This journal auto-connects via WebSocket on localhost:8765<br>
-      <br><strong style="color:var(--yellow)">⚠ Security:</strong> Credentials stored locally in your browser only. Never sent to any server.
+    <!-- Repo input -->
+    <div style="margin-bottom:16px">
+      <label style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px">Your GitHub Pages URL</label>
+      <input id="gh-repo-input" type="text" placeholder="e.g. https://yourusername.github.io/zen-journal/" class="ao-form-input">
     </div>
 
     <div style="display:flex;gap:10px">
       <button onclick="clearAngelOneCreds()" class="btn btn-ghost" style="flex:1;justify-content:center;color:var(--red);border-color:rgba(245,101,101,0.3)">🗑 Clear</button>
-      <button onclick="downloadAngelBridge()" class="btn btn-ghost" style="flex:1;justify-content:center;color:var(--cyan);border-color:rgba(34,211,238,0.3)">⬇ Download Bridge</button>
-      <button onclick="saveAngelOneCreds()" class="btn btn-primary" style="flex:2;justify-content:center">🔶 Save &amp; Connect</button>
+      <button onclick="saveGHSettings()" class="btn btn-primary" style="flex:2;justify-content:center">✅ Save &amp; Check Status</button>
     </div>
   </div>
 </div>

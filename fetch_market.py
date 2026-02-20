@@ -27,8 +27,10 @@ GH_BRANCH    = os.environ.get("GH_BRANCH", "main")
 BASE_URL = "https://apiconnect.angelbroking.com"
 
 # â”€â”€ TOTP (RFC 6238) â€” no pyotp dep needed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-def generate_totp(secret_b32: str) -> str:
-    key = base64.b32decode(secret_b32.upper().replace(" ", ""))
+def generate_totp(secret_b32: str) -> str:secret = secret_b32.upper().replace(" ", "")
+# Add padding if needed
+secret += "=" * ((8 - len(secret) % 8) % 8)
+key = base64.b32decode(secret)
     counter = struct.pack(">Q", int(time.time()) // 30)
     hmac_hash = hmac.new(key, counter, hashlib.sha1).digest()
     offset = hmac_hash[-1] & 0x0F

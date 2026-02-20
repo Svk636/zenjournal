@@ -2,13 +2,12 @@ name: Fetch NSE Market Data
 
 on:
   schedule:
-    - cron: '45-59 3 * * 1-5'
-    - cron: '* 4-9 * * 1-5'
-    - cron: '0 10 * * 1-5'
-  workflow_dispatch:
+    # Every minute during IST market hours (Mon-Fri 03:30-10:00 UTC = 09:00-15:30 IST)
+    - cron: '* 3-10 * * 1-5'
+  workflow_dispatch:   # Allow manual trigger for testing
 
 permissions:
-  contents: write
+  contents: write      # Needed to push data.json
 
 jobs:
   fetch:
@@ -16,40 +15,24 @@ jobs:
     timeout-minutes: 2
 
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Debug Environment
-        run: |
-          python --version
-          pip --version
-          ls -la
+      # No pip install needed â€” fetch_market.py uses only stdlib
 
       - name: Fetch market data
         env:
-          AO_CLIENT_CODE: ${{ secrets.AO_CLIENT_CODE }}
+          AO_CLIENT_CODE:  ${{ secrets.AO_CLIENT_CODE }}
           AO_API_KEY:      ${{ secrets.AO_API_KEY }}
           AO_TOTP_SECRET:  ${{ secrets.AO_TOTP_SECRET }}
           AO_MPIN:         ${{ secrets.AO_MPIN }}
+          GH_PAT:          ${{ secrets.GH_PAT }}
+          GH_BRANCH:       main
         run: python fetch_market.py
-
-      - name: Commit data.json
-        run: |
-          if [ -f data.json ]; then
-            git config user.name  "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add data.json
-            git diff --staged --quiet || git commit -m "chore: update market data [skip ci]"
-            git push
-          else
-            echo "data.json not found, skipping commit"
-          fi

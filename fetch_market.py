@@ -1,257 +1,280 @@
 #!/usr/bin/env python3
 """
-fetch_market.py — Zen Trading Journal data fetcher
+fetch_market.py â€” Angel One SmartAPI data fetcher for Zen Trading Journal
 Runs via GitHub Actions every minute during NSE market hours.
-Writes data.json to repo root, served by GitHub Pages.
+Writes data.json to repo root (served by GitHub Pages).
 
-Secrets required (GitHub repo → Settings → Secrets → Actions):
-  AO_CLIENT_CODE   — Angel One login ID
-  AO_API_KEY       — From smartapi.angelbroking.com → My Apps
-  AO_TOTP_SECRET   — Base32 TOTP secret (not the QR code, the text string)
-  AO_MPIN          — 4-digit MPIN
-  GH_PAT           — GitHub Personal Access Token (repo scope) — for git push
+Required GitHub Secrets:
+  AO_CLIENT_CODE   â€” Your Angel One login ID
+  AO_API_KEY       â€” From smartapi.angelbroking.com
+  AO_TOTP_SECRET   â€” Base32 TOTP secret from Angel One
+  AO_MPIN          â€” Your 4-digit MPIN
+  GH_PAT           â€” GitHub Personal Access Token (repo scope)
 """
-
-import json
-import os
-import sys
-import time
+import os, json, time, hmac, hashlib, struct, base64, math
 from datetime import datetime, timezone
+import urllib.request, urllib.error
 
-import pyotp
-import requests
-
-# ── CONFIG ─────────────────────────────────────────────────────────────────
+# â”€â”€ Config from GitHub Secrets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 CLIENT_CODE  = os.environ["AO_CLIENT_CODE"]
 API_KEY      = os.environ["AO_API_KEY"]
 TOTP_SECRET  = os.environ["AO_TOTP_SECRET"]
 MPIN         = os.environ["AO_MPIN"]
+GH_PAT       = os.environ["GH_PAT"]
+GH_REPO      = os.environ.get("GITHUB_REPOSITORY", "")  # auto-set by Actions
+GH_BRANCH    = os.environ.get("GH_BRANCH", "main")
 
 BASE_URL = "https://apiconnect.angelbroking.com"
 
-HEADERS_BASE = {
-    "Content-Type":    "application/json",
-    "Accept":          "application/json",
-    "X-UserType":      "USER",
-    "X-SourceID":      "WEB",
-    "X-ClientLocalIP": "127.0.0.1",
-    "X-ClientPublicIP":"127.0.0.1",
-    "X-MACAddress":    "00:00:00:00:00:00",
-    "X-PrivateKey":    API_KEY,
-}
+# â”€â”€ TOTP (RFC 6238) â€” no pyotp dep needed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+def generate_totp(secret_b32: str) -> str:
+    key = base64.b32decode(secret_b32.upper().replace(" ", ""))
+    counter = struct.pack(">Q", int(time.time()) // 30)
+    hmac_hash = hmac.new(key, counter, hashlib.sha1).digest()
+    offset = hmac_hash[-1] & 0x0F
+    code = struct.unpack(">I", hmac_hash[offset:offset+4])[0] & 0x7FFFFFFF
+    return str(code % 1000000).zfill(6)
 
-# NSE index tokens
-INDEX_TOKENS = {
-    "NIFTY50":    {"token": "99926000", "exch": "NSE", "name": "Nifty 50"},
-    "BANKNIFTY":  {"token": "99926009", "exch": "NSE", "name": "Nifty Bank"},
-    "FINNIFTY":   {"token": "99926037", "exch": "NSE", "name": "Nifty Fin Service"},
-    "MIDCPNIFTY": {"token": "99926074", "exch": "NSE", "name": "Nifty Midcap"},
-    "SENSEX":     {"token": "1",        "exch": "BSE", "name": "Sensex"},
-    "INDIAVIX":   {"token": "99919000", "exch": "NSE", "name": "India VIX"},
-}
+# â”€â”€ Angel One API helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+def ao_post(path: str, payload: dict, headers: dict = None) -> dict:
+    url = BASE_URL + path
+    data = json.dumps(payload).encode()
+    req = urllib.request.Request(url, data=data,
+          headers={"Content-Type": "application/json",
+                   "Accept": "application/json",
+                   "X-UserType": "USER",
+                   "X-SourceID": "WEB",
+                   "X-ClientLocalIP": "127.0.0.1",
+                   "X-ClientPublicIP": "127.0.0.1",
+                   "X-MACAddress": "00:00:00:00:00:00",
+                   "X-PrivateKey": API_KEY,
+                   **(headers or {})})
+    with urllib.request.urlopen(req, timeout=15) as r:
+        return json.loads(r.read())
 
-# NSE stock tokens for top movers
-STOCK_TOKENS = {
-    "RELIANCE":   "2885",  "TCS":        "11536", "HDFCBANK":   "1333",
-    "INFY":       "1594",  "ICICIBANK":  "4963",  "WIPRO":      "3787",
-    "AXISBANK":   "5900",  "KOTAKBANK":  "1922",  "LT":         "11483",
-    "SBIN":       "3045",  "BAJFINANCE": "317",   "MARUTI":     "10999",
-    "TITAN":      "3506",  "SUNPHARMA":  "3351",  "HCLTECH":    "7229",
-    "BHARTIARTL": "10604", "ITC":        "1660",  "ASIANPAINT": "236",
-    "ADANIENT":   "25",    "HINDUNILVR": "1394",
-}
+def ao_get(path: str, token: str) -> dict:
+    url = BASE_URL + path
+    req = urllib.request.Request(url,
+          headers={"Authorization": f"Bearer {token}",
+                   "Content-Type": "application/json",
+                   "Accept": "application/json",
+                   "X-UserType": "USER",
+                   "X-SourceID": "WEB",
+                   "X-ClientLocalIP": "127.0.0.1",
+                   "X-ClientPublicIP": "127.0.0.1",
+                   "X-MACAddress": "00:00:00:00:00:00",
+                   "X-PrivateKey": API_KEY})
+    with urllib.request.urlopen(req, timeout=15) as r:
+        return json.loads(r.read())
 
-
-# ── AUTH ────────────────────────────────────────────────────────────────────
+# â”€â”€ Login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def login() -> str:
-    totp = pyotp.TOTP(TOTP_SECRET).now()
-    r = requests.post(
-        f"{BASE_URL}/rest/auth/angelbroking/user/v1/loginByPassword",
-        headers=HEADERS_BASE,
-        json={"clientcode": CLIENT_CODE, "password": MPIN, "totp": totp},
-        timeout=15,
-    )
-    r.raise_for_status()
-    data = r.json()
-    if not data.get("status") or not data.get("data", {}).get("jwtToken"):
-        raise RuntimeError(f"Login failed: {data.get('message', 'unknown')}")
-    print(f"✅ Logged in as {CLIENT_CODE}")
-    return data["data"]["jwtToken"]
+    totp = generate_totp(TOTP_SECRET)
+    resp = ao_post("/rest/auth/angelbroking/user/v1/loginByPassword", {
+        "clientcode": CLIENT_CODE,
+        "password": MPIN,
+        "totp": totp
+    })
+    if not resp.get("status"):
+        raise RuntimeError(f"Login failed: {resp.get('message', 'unknown error')}")
+    return resp["data"]["jwtToken"]
 
+# â”€â”€ Fetch NSE indices â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+INDEX_TOKENS = {
+    "NIFTY50":     "99926000",
+    "BANKNIFTY":   "99926009",
+    "SENSEX":      "99919000",
+    "NIFTYIT":     "99926048",
+    "MIDCPNIFTY":  "99926013",
+    "INDIAVIX":    "99919003",
+}
 
-# ── MARKET DATA ─────────────────────────────────────────────────────────────
-def get_market_data(jwt: str, exchange_tokens: dict) -> list:
-    headers = {**HEADERS_BASE, "Authorization": f"Bearer {jwt}"}
-    r = requests.post(
-        f"{BASE_URL}/rest/secure/angelbroking/market/v1/getMarketData",
-        headers=headers,
-        json={"mode": "FULL", "exchangeTokens": exchange_tokens},
-        timeout=15,
-    )
-    r.raise_for_status()
-    data = r.json()
-    return data.get("data", {}).get("fetched", [])
-
-
-# ── OPTION CHAIN ─────────────────────────────────────────────────────────────
-def get_option_chain(jwt: str, symbol: str = "NIFTY") -> dict | None:
-    headers = {**HEADERS_BASE, "Authorization": f"Bearer {jwt}"}
-    try:
-        r = requests.get(
-            f"{BASE_URL}/rest/secure/angelbroking/derivatives/v1/getCandleData",
-            headers=headers,
-            params={"name": symbol, "expirydate": ""},
-            timeout=15,
-        )
-        if r.status_code != 200:
-            return None
-        data = r.json()
-        if not data.get("status"):
-            return None
-        return data.get("data")
-    except Exception as e:
-        print(f"⚠ Option chain error: {e}")
-        return None
-
-
-# ── PROCESS DATA ─────────────────────────────────────────────────────────────
-def build_output(jwt: str) -> dict:
-    now_utc = datetime.now(timezone.utc)
-
-    # ─ Indices ─────────────────────────────────────────────────────────────
-    nse_toks = [t["token"] for t in INDEX_TOKENS.values() if t["exch"] == "NSE"]
-    bse_toks = [t["token"] for t in INDEX_TOKENS.values() if t["exch"] == "BSE"]
-    raw = get_market_data(jwt, {"NSE": nse_toks, "BSE": bse_toks})
-
-    # Build token→symbol lookup
-    tok_to_sym = {v["token"]: k for k, v in INDEX_TOKENS.items()}
-    tok_to_exch = {v["token"]: v["exch"] for k, v in INDEX_TOKENS.items()}
-
+def fetch_indices(token: str) -> dict:
     indices = {}
-    for item in raw:
-        tok  = item.get("symbolToken") or item.get("token", "")
-        sym  = tok_to_sym.get(tok)
-        if not sym:
-            continue
-        ltp  = float(item.get("ltp", 0))
-        close = float(item.get("close", 0) or item.get("previousClose", 0) or ltp)
-        chg  = round((ltp - close) / close * 100, 2) if close else 0.0
-        indices[sym] = {
-            "ltp":   ltp,
-            "chg":   chg,
-            "open":  float(item.get("open", 0)),
-            "high":  float(item.get("high", 0)),
-            "low":   float(item.get("low", 0)),
-            "close": close,
-            "name":  INDEX_TOKENS[sym]["name"],
-        }
-    print(f"📊 Indices fetched: {list(indices.keys())}")
-
-    # ─ Stocks / Movers ────────────────────────────────────────────────────
-    stock_raw = get_market_data(jwt, {"NSE": list(STOCK_TOKENS.values())})
-    tok_to_stock = {v: k for k, v in STOCK_TOKENS.items()}
-
-    stocks = []
-    for item in stock_raw:
-        tok  = item.get("symbolToken") or item.get("token", "")
-        sym  = tok_to_stock.get(tok)
-        if not sym:
-            continue
-        ltp   = float(item.get("ltp", 0))
-        close = float(item.get("close", 0) or item.get("previousClose", 0) or ltp)
-        chg   = round((ltp - close) / close * 100, 2) if close else 0.0
-        stocks.append({"symbol": sym, "ltp": ltp, "chg": chg})
-
-    gainers = sorted([s for s in stocks if s["chg"] > 0], key=lambda x: -x["chg"])[:10]
-    losers  = sorted([s for s in stocks if s["chg"] < 0], key=lambda x:  x["chg"])[:10]
-    print(f"📈 Stocks fetched: {len(stocks)} — {len(gainers)} gainers, {len(losers)} losers")
-
-    # ─ Option Chain ───────────────────────────────────────────────────────
-    fo_summary = None
-    chain_data = get_option_chain(jwt, "NIFTY")
-    if chain_data:
+    for sym, tok in INDEX_TOKENS.items():
         try:
-            spot       = float(chain_data.get("underlyingValue", 0))
-            chain_rows = chain_data.get("optionChainData", [])
-            strikes    = []
-            for row in chain_rows:
-                ce = row.get("CE", {})
-                pe = row.get("PE", {})
-                sp = float(row.get("strikePrice", 0))
-                strikes.append({
-                    "strike":  sp,
-                    "atm":     abs(sp - spot) < 51,
-                    "callOI":  int(ce.get("openInterest", 0)),
-                    "callLTP": float(ce.get("lastPrice", 0)),
-                    "putOI":   int(pe.get("openInterest", 0)),
-                    "putLTP":  float(pe.get("lastPrice", 0)),
-                })
-            total_call = sum(s["callOI"] for s in strikes) or 1
-            total_put  = sum(s["putOI"]  for s in strikes)
-            pcr        = round(total_put / total_call, 2)
-
-            def pain(sp):
-                c = sum(max(0, sp - s["strike"]) * s["callOI"] for s in strikes)
-                p = sum(max(0, s["strike"] - sp) * s["putOI"]  for s in strikes)
-                return c + p
-
-            maxpain = min(strikes, key=lambda s: pain(s["strike"]))["strike"] if strikes else 0
-            fo_summary = {
-                "symbol":   "NIFTY",
-                "spot":     spot,
-                "pcr":      pcr,
-                "maxpain":  maxpain,
-                "totaloi":  total_call + total_put,
-                "chain":    strikes[:40],   # limit payload — ATM ±20 strikes
-            }
-            print(f"📉 F&O: spot={spot}, PCR={pcr}, MaxPain={maxpain}")
+            resp = ao_get(f"/rest/secure/angelbroking/market/v1/quote/?mode=FULL&exchangeTokens={{"NSE":["{tok}"]}}", token)
+            if resp.get("status") and resp["data"].get("fetched"):
+                d = resp["data"]["fetched"][0]
+                ltp = float(d.get("ltp", 0))
+                close = float(d.get("close", ltp) or ltp)
+                chg_pct = ((ltp - close) / close * 100) if close else 0
+                indices[sym] = {"ltp": round(ltp, 2), "chg": round(chg_pct, 2), "close": round(close, 2)}
         except Exception as e:
-            print(f"⚠ F&O parse error: {e}")
+            print(f"  âš  Index {sym}: {e}")
+    return indices
 
-    return {
-        "timestamp": now_utc.isoformat(),
-        "source":    "GitHub Actions + Angel One SmartAPI",
-        "market":    "NSE/BSE",
-        "indices":   indices,
-        "movers":    {"gainers": gainers, "losers": losers},
-        "fo":        fo_summary,
-    }
+# â”€â”€ Fetch top movers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+NIFTY50_SYMBOLS = [
+    ("RELIANCE","2885"),("TCS","11536"),("HDFCBANK","1333"),("INFY","1594"),
+    ("ICICIBANK","4963"),("BHARTIARTL","10604"),("ITC","1660"),("SBIN","3045"),
+    ("WIPRO","3787"),("NESTLEIND","17963"),("BAJFINANCE","317"),("LT","11483"),
+    ("HCLTECH","7229"),("TITAN","3506"),("KOTAKBANK","1922"),("ADANIENT","25"),
+    ("MARUTI","10999"),("SUNPHARMA","3351"),("ASIANPAINT","236"),("ULTRACEMCO","2585"),
+]
 
+def fetch_movers(token: str) -> dict:
+    gainers, losers = [], []
+    try:
+        tok_str = ",".join(f'"{t}"' for _, t in NIFTY50_SYMBOLS)
+        resp = ao_get(f'/rest/secure/angelbroking/market/v1/quote/?mode=LTP&exchangeTokens={{"NSE":[{tok_str}]}}', token)
+        if resp.get("status") and resp["data"].get("fetched"):
+            sym_map = {t: s for s, t in NIFTY50_SYMBOLS}
+            rows = []
+            for d in resp["data"]["fetched"]:
+                sym = sym_map.get(d.get("symbolToken",""), d.get("tradingSymbol",""))
+                ltp = float(d.get("ltp", 0))
+                close = float(d.get("close", ltp) or ltp)
+                chg = ((ltp - close) / close * 100) if close else 0
+                rows.append({"symbol": sym, "ltp": round(ltp,2), "chg": round(chg,2), "series": "EQ"})
+            rows.sort(key=lambda x: x["chg"], reverse=True)
+            gainers = rows[:10]
+            losers  = rows[-10:][::-1]
+    except Exception as e:
+        print(f"  âš  Movers: {e}")
+    return {"gainers": gainers, "losers": losers}
 
-# ── MAIN ────────────────────────────────────────────────────────────────────
+# â”€â”€ Fetch F&O option chain (NIFTY, current expiry) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+def fetch_fo_chain(token: str) -> dict:
+    try:
+        resp = ao_get(
+            "/rest/secure/angelbroking/market/v1/getCandleData?"
+            "exchange=NFO&symboltoken=99926000&interval=ONE_MINUTE",
+            token
+        )
+        # Use OC endpoint instead
+        resp2 = ao_post("/rest/secure/angelbroking/market/v1/optionChain",
+                        {"name": "NIFTY", "expirydate": "", "strikecount": 12},
+                        {"Authorization": f"Bearer {token}"})
+        if not (resp2.get("status") and resp2.get("data")):
+            return {}
+        oc = resp2["data"]
+        spot = float(oc.get("underlyingLTP", 22500))
+        atm = round(spot / 50) * 50
+        chain_data = oc.get("OC", {})
+        strikes = []
+        call_oi_total = put_oi_total = 0
+        for strike_price, opt in sorted(chain_data.items(), key=lambda x: float(x[0])):
+            sp = float(strike_price)
+            c = opt.get("CE", {})
+            p = opt.get("PE", {})
+            call_oi  = int(c.get("openInterest", 0))
+            put_oi   = int(p.get("openInterest", 0))
+            call_oi_total += call_oi
+            put_oi_total  += put_oi
+            strikes.append({
+                "strike": sp,
+                "atm": abs(sp - atm) < 1,
+                "callOI":     call_oi,
+                "callLTP":    float(c.get("lastPrice", 0)),
+                "callPrevLTP":float(c.get("closePrice", 0)),
+                "putOI":      put_oi,
+                "putLTP":     float(p.get("lastPrice", 0)),
+                "putPrevLTP": float(p.get("closePrice", 0)),
+            })
+        pcr = (put_oi_total / call_oi_total) if call_oi_total else 1.0
+        # Max pain
+        max_pain = atm
+        min_pain_val = float("inf")
+        for s in strikes:
+            pain = sum(max(0, (s["strike"] - x["strike"])) * x["callOI"] +
+                       max(0, (x["strike"] - s["strike"])) * x["putOI"]
+                       for x in strikes)
+            if pain < min_pain_val:
+                min_pain_val = pain
+                max_pain = s["strike"]
+        return {
+            "pcr": round(pcr, 3),
+            "maxpain": max_pain,
+            "totaloi": call_oi_total + put_oi_total,
+            "spot": round(spot, 2),
+            "chain": strikes,
+        }
+    except Exception as e:
+        print(f"  âš  F&O chain: {e}")
+        return {}
+
+# â”€â”€ Write data.json to GitHub via API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+def push_to_github(payload: dict):
+    content = base64.b64encode(json.dumps(payload, separators=(",", ":")).encode()).decode()
+    path = f"https://api.github.com/repos/{GH_REPO}/contents/data.json"
+
+    # Get current SHA (needed for update)
+    sha = None
+    try:
+        req = urllib.request.Request(path,
+              headers={"Authorization": f"token {GH_PAT}",
+                       "Accept": "application/vnd.github.v3+json",
+                       "User-Agent": "ZenJournal-Actions"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            sha = json.loads(r.read()).get("sha")
+    except urllib.error.HTTPError as e:
+        if e.code != 404:
+            raise
+
+    body = {"message": f"data: market snapshot {payload['timestamp']}",
+            "content": content,
+            "branch": GH_BRANCH}
+    if sha:
+        body["sha"] = sha
+
+    data = json.dumps(body).encode()
+    req = urllib.request.Request(path, data=data, method="PUT",
+          headers={"Authorization": f"token {GH_PAT}",
+                   "Accept": "application/vnd.github.v3+json",
+                   "Content-Type": "application/json",
+                   "User-Agent": "ZenJournal-Actions"})
+    with urllib.request.urlopen(req, timeout=15) as r:
+        resp = json.loads(r.read())
+    print(f"  âœ… Pushed data.json (SHA: {resp.get('content', {}).get('sha', '?')[:7]})")
+
+# â”€â”€ Market hours check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+def is_market_open() -> bool:
+    now_ist = datetime.now(timezone.utc).replace(tzinfo=timezone.utc)
+    # IST = UTC+5:30
+    from datetime import timedelta
+    ist = now_ist + timedelta(hours=5, minutes=30)
+    if ist.weekday() >= 5:  # Sat/Sun
+        return False
+    h, m = ist.hour, ist.minute
+    # 09:00 to 15:30 IST
+    return (h == 9 and m >= 0) or (9 < h < 15) or (h == 15 and m <= 30)
+
+# â”€â”€ Main â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def main():
-    print(f"🚀 fetch_market.py starting — {datetime.now(timezone.utc).isoformat()}")
+    print(f"ZenJournal fetch_market.py â€” {datetime.utcnow().isoformat()}Z")
 
-    # Skip outside market hours (extra safety — workflow schedule already handles this)
-    now_ist_hour   = (datetime.now(timezone.utc).hour + 5) % 24
-    now_ist_minute = datetime.now(timezone.utc).minute
-    ist_minutes    = now_ist_hour * 60 + now_ist_minute
-    market_open    = 9 * 60 + 15   # 9:15 AM
-    market_close   = 15 * 60 + 30  # 3:30 PM
-
-    if not (market_open <= ist_minutes <= market_close):
-        print(f"⏸  Outside market hours (IST {now_ist_hour:02d}:{now_ist_minute:02d}) — writing stale marker")
-        # Write a status-only file so the journal knows market is closed
-        try:
-            existing = json.load(open("data.json"))
-        except Exception:
-            existing = {}
-        existing["market_status"] = "closed"
-        existing["timestamp"]     = datetime.now(timezone.utc).isoformat()
-        json.dump(existing, open("data.json", "w"), indent=2)
-        print("✅ data.json updated with closed status")
+    if not is_market_open():
+        print("  â„¹ Market closed â€” skipping fetch")
         return
 
-    jwt = login()
-    output = build_output(jwt)
-    output["market_status"] = "open"
+    print("  ðŸ” Logging in to Angel Oneâ€¦")
+    token = login()
+    print("  âœ… Login OK")
 
-    json.dump(output, open("data.json", "w"), indent=2)
-    print(f"✅ data.json written — {len(str(output))} bytes")
-    print(f"   Indices: {list(output['indices'].keys())}")
-    print(f"   Movers:  {len(output['movers']['gainers'])} gainers, {len(output['movers']['losers'])} losers")
-    print(f"   F&O:     {'yes' if output['fo'] else 'no'}")
+    print("  ðŸ“Š Fetching indicesâ€¦")
+    indices = fetch_indices(token)
+    print(f"  âœ… {len(indices)} indices fetched: {list(indices.keys())}")
 
+    print("  ðŸ“ˆ Fetching moversâ€¦")
+    movers = fetch_movers(token)
+    print(f"  âœ… {len(movers.get('gainers',[]))} gainers, {len(movers.get('losers',[]))} losers")
+
+    print("  ðŸ”— Fetching F&O chainâ€¦")
+    fo = fetch_fo_chain(token)
+    print(f"  âœ… F&O: PCR={fo.get('pcr','â€”')}, MaxPain={fo.get('maxpain','â€”')}")
+
+    payload = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "source": "Angel One SmartAPI via GitHub Actions",
+        "indices": indices,
+        "movers": movers,
+        "fo": fo,
+    }
+
+    print("  ðŸ“¤ Pushing to GitHubâ€¦")
+    push_to_github(payload)
+    print("  ðŸŽ‰ Done!")
 
 if __name__ == "__main__":
     main()

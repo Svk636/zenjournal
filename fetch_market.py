@@ -93,7 +93,7 @@ def fetch_indices(token: str) -> dict:
     indices = {}
     for sym, tok in INDEX_TOKENS.items():
         try:
-            resp = ao_get(f'/rest/secure/angelbroking/market/v1/quote/?mode=FULL&exchangeTokens={{"NSE":["{tok}"]}}", token)
+            resp = ao_get(f'/rest/secure/angelbroking/market/v1/quote/?mode=FULL&exchangeTokens={{"NSE":["{tok}"]}}', token)
             if resp.get("status") and resp["data"].get("fetched"):
                 d = resp["data"]["fetched"][0]
                 ltp = float(d.get("ltp", 0))

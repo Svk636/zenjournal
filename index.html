@@ -1870,6 +1870,7 @@ console.log('✅ Live Data Engine loaded — Finnhub + Alpha Vantage + CoinGecko
         <button class="nav-btn" role="tab" aria-selected="false" data-view="screener">🔍 Screener</button>
         <button class="nav-btn" role="tab" aria-selected="false" data-view="news">📰 News & Calendar</button>
         <button class="nav-btn" role="tab" aria-selected="false" data-view="livemarkets">📡 Live Markets</button>
+        <button class="nav-btn" role="tab" aria-selected="false" data-view="quantlab">⚗️ Quant Lab</button>
         <button class="nav-btn" role="tab" aria-selected="false" data-view="changelog">🐛 Changelog</button>
       </nav>
     </div>
@@ -2085,6 +2086,14 @@ console.log('✅ Live Data Engine loaded — Finnhub + Alpha Vantage + CoinGecko
     <div class="panel">
       <div class="panel-header"><span class="panel-title">Streak Analysis</span></div>
       <div style="padding:20px;display:flex;flex-direction:column;gap:10px;" id="streakPanel"></div>
+    </div>
+  </div>
+
+  <!-- Benchmark Comparison -->
+  <div class="panel" style="margin-top:16px">
+    <div class="panel-header"><span class="panel-title">📊 Benchmark Comparison</span></div>
+    <div id="benchmarkCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;padding:16px">
+      <div style="color:var(--text3);font-size:12px;grid-column:1/-1;text-align:center;padding:16px">Load your trades to see benchmark comparison</div>
     </div>
   </div>
 </div>
@@ -2815,6 +2824,7 @@ console.log('✅ Live Data Engine loaded — Finnhub + Alpha Vantage + CoinGecko
     <button class="calc-tab" onclick="switchCalcTab('wealth',this)">🌟 Wealth Goal</button>
     <button class="calc-tab" onclick="switchCalcTab('fire',this)">🔥 FIRE Number</button>
     <button class="calc-tab" onclick="switchCalcTab('compound',this)">⚡ Compound Interest</button>
+    <button class="calc-tab" onclick="switchCalcTab('networth',this)">💼 Net Worth</button>
   </div>
 
     <!-- SIP CALCULATOR -->
@@ -2959,6 +2969,64 @@ console.log('✅ Live Data Engine loaded — Finnhub + Alpha Vantage + CoinGecko
       </div>
     </div>
   </div>
+
+  <!-- NET WORTH TRACKER -->
+  <div id="calc-networth" class="calc-section">
+    <div class="calc-card" style="max-width:700px;margin:0 auto">
+      <div class="calc-title">💼 Net Worth Tracker</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+
+        <!-- Assets -->
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--green);margin-bottom:10px">ASSETS</div>
+          <div id="assetsBreakdown" style="margin-bottom:10px;min-height:40px"></div>
+          <div style="display:flex;gap:8px">
+            <input class="calc-input" type="text" id="nwAssetName" placeholder="Asset name" style="flex:2">
+            <input class="calc-input" type="number" id="nwAssetVal" placeholder="Value (₹)" style="flex:2">
+            <button class="btn btn-ghost" onclick="addNWItem('asset')" style="flex:1;justify-content:center;font-size:12px;padding:8px">＋</button>
+          </div>
+          <div class="calc-output-row" style="margin-top:10px;font-weight:700">
+            <span>Total Assets</span>
+            <span class="calc-output-val" id="totalAssetsVal" style="color:var(--green)">₹0</span>
+          </div>
+        </div>
+
+        <!-- Liabilities -->
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--red);margin-bottom:10px">LIABILITIES</div>
+          <div id="liabilitiesBreakdown" style="margin-bottom:10px;min-height:40px"></div>
+          <div style="display:flex;gap:8px">
+            <input class="calc-input" type="text" id="nwLiabName" placeholder="Liability name" style="flex:2">
+            <input class="calc-input" type="number" id="nwLiabVal" placeholder="Amount (₹)" style="flex:2">
+            <button class="btn btn-ghost" onclick="addNWItem('liability')" style="flex:1;justify-content:center;font-size:12px;padding:8px">＋</button>
+          </div>
+          <div class="calc-output-row" style="margin-top:10px;font-weight:700">
+            <span>Total Liabilities</span>
+            <span class="calc-output-val" id="totalLiabVal" style="color:var(--red)">₹0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Net Worth summary bar -->
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div>
+            <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px">NET WORTH</div>
+            <div style="font-family:var(--font-head);font-size:28px;font-weight:700" id="netWorthVal">₹0</div>
+          </div>
+          <div style="text-align:right;font-size:12px;color:var(--text3)" id="nwRatioLabel">A:L = 0:1</div>
+        </div>
+        <div style="background:var(--bg4);border-radius:4px;height:8px;overflow:hidden">
+          <div id="nwBar" style="height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));border-radius:4px;width:50%;transition:width 0.5s ease"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:5px">
+          <span>Liabilities</span><span>Assets</span>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:10px">💡 Click any item to remove it. Data is stored in memory only — not saved between sessions.</div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ══════════════════════════════════════════
@@ -3068,6 +3136,22 @@ console.log('✅ Live Data Engine loaded — Finnhub + Alpha Vantage + CoinGecko
       <div class="metric-box"><div class="metric-box-val" id="de-hist-pf">—</div><div class="metric-box-lbl">Profit Factor</div></div>
       <div class="metric-box"><div class="metric-box-val" id="de-hist-r">—</div><div class="metric-box-lbl">Avg R-Multiple</div></div>
       <div class="metric-box"><div class="metric-box-val" id="de-hist-n">—</div><div class="metric-box-lbl">Sample Size</div></div>
+    </div>
+  </div>
+
+  <!-- ── AI ANALYSIS ── -->
+  <div class="panel" style="margin-top:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div>
+        <div class="ql-section-title" style="margin-bottom:2px">✦ AI Trade Analysis</div>
+        <div style="font-size:11px;color:var(--text3)">Claude analyses your systematic score and journal history for this setup</div>
+      </div>
+      <button id="aiAnalyseBtn" onclick="runAIAnalysis()" class="btn btn-primary" style="font-size:12px;gap:6px">
+        <span style="font-size:14px">✦</span> Analyse →
+      </button>
+    </div>
+    <div id="aiAnalysisOutput" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;min-height:60px;font-size:13px;color:var(--text3);line-height:1.7">
+      Run the Decision Engine scoring first, then click Analyse to get an AI-powered assessment of this trade setup against your historical data.
     </div>
   </div>
 
@@ -3925,6 +4009,137 @@ console.log('✅ Live Data Engine loaded — Finnhub + Alpha Vantage + CoinGecko
 </div>
 
 <!-- ══════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════
+     QUANT LAB VIEW
+══════════════════════════════════════════ -->
+<div id="view-quantlab" class="view">
+  <div class="section-head">
+    <div>
+      <div class="section-title">⚗️ Quant <span>Lab</span></div>
+      <div class="section-sub">Advanced statistical analysis of your trade history — ratios, Monte Carlo, VaR, factor decomposition</div>
+    </div>
+    <button class="btn btn-primary" onclick="runQuantLab()" style="gap:6px"><span>⚗️</span> Run Analysis</button>
+  </div>
+
+  <!-- ── Row 1: Ratios + Monte Carlo stats ── -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+
+    <!-- Risk-Adjusted Ratios -->
+    <div class="panel">
+      <div class="ql-section-title" style="margin-bottom:14px">📐 Risk-Adjusted Ratios</div>
+      <div id="ql-ratios" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div class="metric-box">
+          <div class="metric-box-val" id="ql-sharpe" style="font-size:22px">—</div>
+          <div class="metric-box-lbl">Sharpe Ratio</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-box-val" id="ql-sortino" style="font-size:22px">—</div>
+          <div class="metric-box-lbl">Sortino Ratio</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-box-val" id="ql-calmar" style="font-size:22px">—</div>
+          <div class="metric-box-lbl">Calmar Ratio</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding:10px;background:var(--bg3);border-radius:6px;font-size:11px;color:var(--text3);line-height:1.6">
+        Sharpe &gt;1.5 = excellent · Sortino penalises only downside · Calmar = return ÷ max drawdown
+      </div>
+    </div>
+
+    <!-- Monte Carlo summary stats -->
+    <div class="panel">
+      <div class="ql-section-title" style="margin-bottom:14px">🎲 Monte Carlo — Outcome Range</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+        <div class="metric-box">
+          <div class="metric-box-val" id="mc-p95" style="font-size:13px;color:var(--green)">—</div>
+          <div class="metric-box-lbl">95th pct (best)</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-box-val" id="mc-p50" style="font-size:13px">—</div>
+          <div class="metric-box-lbl">Median</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-box-val" id="mc-p5" style="font-size:13px;color:var(--red)">—</div>
+          <div class="metric-box-lbl">5th pct (worst)</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-box-val" id="mc-ruin" style="font-size:13px">—</div>
+          <div class="metric-box-lbl">Ruin risk</div>
+        </div>
+      </div>
+      <canvas id="mcCanvas" height="110" style="width:100%;border-radius:6px"></canvas>
+    </div>
+  </div>
+
+  <!-- ── Row 2: VaR ── -->
+  <div class="panel" style="margin-bottom:16px">
+    <div class="ql-section-title" style="margin-bottom:14px">📉 Value at Risk (VaR)</div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px">
+      <div class="metric-box"><div class="metric-box-val" id="var-h95" style="color:var(--red)">—</div><div class="metric-box-lbl">Historical 95%</div></div>
+      <div class="metric-box"><div class="metric-box-val" id="var-h99" style="color:var(--red)">—</div><div class="metric-box-lbl">Historical 99%</div></div>
+      <div class="metric-box"><div class="metric-box-val" id="var-p95" style="color:var(--yellow)">—</div><div class="metric-box-lbl">Parametric 95%</div></div>
+      <div class="metric-box"><div class="metric-box-val" id="var-cvar">—</div><div class="metric-box-lbl">CVaR (Expected)</div></div>
+      <div class="metric-box"><div class="metric-box-val" id="var-max" style="color:var(--red)">—</div><div class="metric-box-lbl">Max Loss</div></div>
+      <div class="metric-box"><div class="metric-box-val" id="var-avgw" style="color:var(--green)">—</div><div class="metric-box-lbl">Avg Win</div></div>
+      <div class="metric-box"><div class="metric-box-val" id="var-avgl" style="color:var(--red)">—</div><div class="metric-box-lbl">Avg Loss</div></div>
+    </div>
+  </div>
+
+  <!-- ── Row 3: Stress Tests + Factor Decomposition ── -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+
+    <div class="panel">
+      <div class="ql-section-title" style="margin-bottom:14px">🔥 Stress Tests</div>
+      <div id="ql-stress-cards" style="display:flex;flex-direction:column;gap:8px">
+        <div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Run analysis to load stress tests</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ql-section-title" style="margin-bottom:14px">🧬 Factor Decomposition</div>
+      <div id="ql-factors" style="max-height:280px;overflow-y:auto">
+        <div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Run analysis to load factor breakdown</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Row 4: Time Analytics + Kelly + Heatmap ── -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+
+    <div class="panel">
+      <div class="ql-section-title" style="margin-bottom:14px">🕐 Day-of-Week Performance</div>
+      <div id="ql-time-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+        <div style="color:var(--text3);font-size:12px;text-align:center;padding:16px;grid-column:1/-1">Run analysis to load</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ql-section-title" style="margin-bottom:6px">🎯 Kelly Criterion Allocation</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Optimal position sizing based on your edge</div>
+      <div id="ql-kelly-alloc" style="font-size:13px;color:var(--text3);padding:16px;text-align:center">Run analysis to compute Kelly allocation</div>
+    </div>
+  </div>
+
+  <!-- ── Row 5: Monthly Heatmap + Setup Matrix ── -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+    <div class="panel">
+      <div class="ql-section-title" style="margin-bottom:14px">📅 Monthly P&amp;L Heatmap</div>
+      <div id="ql-monthly-heatmap" style="overflow-x:auto">
+        <div style="color:var(--text3);font-size:12px;text-align:center;padding:16px">Run analysis to load heatmap</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ql-section-title" style="margin-bottom:14px">📊 Setup Performance Matrix</div>
+      <div id="ql-setup-matrix" style="overflow-x:auto">
+        <div style="color:var(--text3);font-size:12px;text-align:center;padding:16px">Run analysis to load matrix</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 <!-- CHANGELOG / KNOWN BUGS VIEW              -->
 <!-- ══════════════════════════════════════════ -->
 <div id="view-changelog" class="view">
@@ -4499,21 +4714,36 @@ const GH_DATA_URL = './data.json';   // fallback; getGHDataUrl() is used at runt
 const GHData = {
   cache: null,
   lastFetch: 0,
+  resolvedUrl: null,  // cache the first URL that works
 
   async get() {
     // Cache for 55s (Actions runs every 60s)
     if (GHData.cache && Date.now() - GHData.lastFetch < 55000) return GHData.cache;
-    try {
-      const r = await fetch(getGHDataUrl() + '?t=' + Date.now());
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const d = await r.json();
-      GHData.cache = d;
-      GHData.lastFetch = Date.now();
-      return d;
-    } catch(e) {
-      console.warn('GHData fetch error:', e.message);
-      return GHData.cache || null;
+
+    // Build URL candidate list — try saved repo first, then same-origin fallback
+    const saved = localStorage.getItem('gh_repo') || '';
+    const candidates = [];
+    if (GHData.resolvedUrl) candidates.push(GHData.resolvedUrl);  // already found working URL
+    if (saved) candidates.push(saved.replace(/\/$/, '') + '/data.json');
+    candidates.push('./data.json');    // always try same-origin (works on GitHub Pages)
+
+    for (const url of [...new Set(candidates)]) {
+      try {
+        const r = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now());
+        if (!r.ok) continue;
+        const d = await r.json();
+        if (!d || typeof d !== 'object') continue;
+        GHData.cache = d;
+        GHData.lastFetch = Date.now();
+        GHData.resolvedUrl = url;  // remember the working URL
+        console.log('[GHData] Using:', url);
+        return d;
+      } catch(e) {
+        console.warn('[GHData] Failed:', url, e.message);
+      }
     }
+    // All candidates failed — return stale cache if any
+    return GHData.cache || null;
   },
 };
 
@@ -4590,15 +4820,21 @@ const FT = {
   start() {
     FT.build();
     setInterval(FT.build, 60000);
-    // Check GH data status
+    // Check GH data status for ticker badge
     GHData.get().then(d => {
-      if (d) {
-        const dot = document.getElementById('ft-angel-dot');
-        const lbl = document.getElementById('ft-angel-label');
-        if (dot) dot.className = 'ao-dot live';
-        if (lbl) lbl.textContent = 'NSE Live ✓';
+      const dot = document.getElementById('ft-angel-dot');
+      const lbl = document.getElementById('ft-angel-label');
+      if (!dot || !lbl) return;
+      if (d && d.timestamp) {
+        const age = Math.round((Date.now() - new Date(d.timestamp).getTime()) / 1000);
+        const fresh = age < 180;
+        dot.className = 'ao-dot' + (fresh ? ' live' : '');
+        lbl.textContent = fresh ? 'NSE Live ✓' : `NSE (${Math.round(age/60)}m old)`;
+      } else if (d) {
+        dot.className = 'ao-dot live';
+        lbl.textContent = 'NSE ✓';
       }
-    });
+    }).catch(() => {});
   },
 };
 
@@ -4627,48 +4863,78 @@ async function loadLMNSE() {
   const st = document.getElementById('lm-nse-status');
   const connDot = document.getElementById('conn-angelone-dot');
   const angelStat = document.getElementById('lm-angel-status');
-  try {
-    const d = await GHData.get();
-    if (!d || !d.indices) throw new Error('No NSE data in data.json');
 
-    const age = Math.round((Date.now() - new Date(d.timestamp).getTime()) / 1000);
-    const fresh = age < 120;
+  // Show loading state
+  if (st) { st.textContent = '⟳ Loading…'; st.style.color = 'var(--yellow)'; }
 
-    // Update index cards
-    Object.entries(d.indices).forEach(([sym, idx]) => {
-      updateLMIndexFromAngel({ symbol: sym, ltp: idx.ltp, chg: idx.chg });
-    });
+  const d = await GHData.get();
 
-    // Update movers
-    if (d.movers) renderNSEMovers(d.movers);
-
-    // Update F&O summary if available
-    if (d.fo) {
-      const pcrEl = document.getElementById('fo-pcr');
-      const mpEl  = document.getElementById('fo-maxpain');
-      const oiEl  = document.getElementById('fo-total-oi');
-      const sigEl = document.getElementById('fo-pcr-signal');
-      if (pcrEl) pcrEl.textContent = d.fo.pcr?.toFixed(2) || '—';
-      if (mpEl)  mpEl.textContent  = d.fo.maxpain ? fmtNum(d.fo.maxpain) : '—';
-      if (oiEl)  oiEl.textContent  = d.fo.totaloi ? (d.fo.totaloi/100000).toFixed(1)+'L' : '—';
-      if (sigEl) sigEl.textContent = d.fo.pcr > 1.2 ? 'Bullish' : d.fo.pcr < 0.8 ? 'Bearish' : 'Neutral';
-    }
-
-    if (st) { st.textContent = fresh ? '🟢 Live · GitHub Actions' : `🟡 Stale (${age}s old)`; st.style.color = fresh ? 'var(--green)' : 'var(--yellow)'; }
-    if (connDot) connDot.className = 'lm-conn-dot ' + (fresh ? 'live' : 'offline');
-    if (angelStat) angelStat.innerHTML = fresh
-      ? `🟢 NSE data via GitHub Actions — updated ${age}s ago`
-      : `🟡 Data is ${age}s old — check workflow`;
-
-    const ftDot = document.getElementById('ft-angel-dot');
-    const ftLbl = document.getElementById('ft-angel-label');
-    if (ftDot) ftDot.className = 'ao-dot' + (fresh ? ' live' : '');
-    if (ftLbl) ftLbl.textContent = fresh ? 'NSE Live ✓' : 'NSE (stale)';
-
-  } catch(e) {
-    if (st) { st.textContent = '⚫ data.json not found — run Actions workflow'; st.style.color = 'var(--text3)'; }
+  if (!d) {
+    // Truly no data — could not reach data.json from any URL
+    if (st) { st.textContent = '⚫ data.json not reachable'; st.style.color = 'var(--text3)'; }
     if (connDot) connDot.className = 'lm-conn-dot offline';
     if (angelStat) angelStat.innerHTML = '⚫ GitHub Actions not set up — <a href="#" onclick="openAngelOneSetup()" style="color:var(--accent2)">Setup guide →</a>';
+    return;
+  }
+
+  // data.json is reachable — mark Angel One as connected regardless of content
+  const ts = d.timestamp ? new Date(d.timestamp) : null;
+  const age = ts ? Math.round((Date.now() - ts.getTime()) / 1000) : null;
+  const fresh = age !== null && age < 180;  // 3 min window (workflow runs every 60s)
+
+  // ── Update status indicators first (before any data parsing) ──
+  if (connDot) connDot.className = 'lm-conn-dot ' + (fresh ? 'live' : 'loading');
+  if (angelStat) {
+    if (fresh) {
+      angelStat.innerHTML = `🟢 NSE live via GitHub Actions — ${age}s ago`;
+      angelStat.style.color = 'var(--green)';
+    } else if (age !== null) {
+      angelStat.innerHTML = `🟡 NSE data is ${Math.round(age/60)}m old — workflow may be paused`;
+      angelStat.style.color = 'var(--yellow)';
+    } else {
+      angelStat.innerHTML = `🟡 data.json found but no timestamp`;
+      angelStat.style.color = 'var(--yellow)';
+    }
+  }
+  const ftDot = document.getElementById('ft-angel-dot');
+  const ftLbl = document.getElementById('ft-angel-label');
+  if (ftDot) ftDot.className = 'ao-dot' + (fresh ? ' live' : '');
+  if (ftLbl) ftLbl.textContent = fresh ? 'NSE Live ✓' : (age !== null ? `NSE ${Math.round(age/60)}m old` : 'NSE —');
+
+  // ── Parse indices ──
+  const indices = d.indices || {};
+  const indexCount = Object.keys(indices).length;
+  if (indexCount > 0) {
+    Object.entries(indices).forEach(([sym, idx]) => {
+      if (idx && typeof idx.ltp === 'number') {
+        updateLMIndexFromAngel({ symbol: sym, ltp: idx.ltp, chg: idx.chg ?? 0 });
+      }
+    });
+    if (st) {
+      st.textContent = fresh ? `🟢 Live · Angel One (${indexCount} indices)` : `🟡 Stale · ${Math.round(age/60)}m old`;
+      st.style.color = fresh ? 'var(--green)' : 'var(--yellow)';
+    }
+  } else {
+    // data.json exists but indices empty — workflow ran but market may be closed
+    if (st) { st.textContent = '🟡 data.json OK — market closed or indices pending'; st.style.color = 'var(--yellow)'; }
+  }
+
+  // ── Update movers ──
+  if (d.movers && (d.movers.gainers?.length || d.movers.losers?.length)) {
+    renderNSEMovers(d.movers);
+  }
+
+  // ── Update F&O summary ──
+  if (d.fo && typeof d.fo.pcr === 'number') {
+    const pcrEl = document.getElementById('fo-pcr');
+    const mpEl  = document.getElementById('fo-maxpain');
+    const oiEl  = document.getElementById('fo-total-oi');
+    const sigEl = document.getElementById('fo-pcr-signal');
+    if (pcrEl) pcrEl.textContent = d.fo.pcr.toFixed(2);
+    if (mpEl)  mpEl.textContent  = d.fo.maxpain ? fmtNum(d.fo.maxpain) : '—';
+    if (oiEl)  oiEl.textContent  = d.fo.totaloi ? (d.fo.totaloi/100000).toFixed(1)+'L' : '—';
+    if (sigEl) sigEl.textContent = d.fo.pcr > 1.2 ? 'Bullish' : d.fo.pcr < 0.8 ? 'Bearish' : 'Neutral';
+    if (d.fo.chain) loadFOChain();
   }
 }
 
@@ -4814,14 +5080,19 @@ async function loadLMUSMovers(usQuotes, syms, labels) {
 }
 
 function updateLMIndexFromAngel(tick) {
-  // Map Angel One symbol to UI element
+  // Map data.json key → DOM element IDs
+  // Keys must match what fetch_market.py writes in INDEX_TOKENS
   const map = {
-    'NIFTY': ['idx-nifty50','idx-nifty50-chg'],
-    'BANKNIFTY': ['idx-banknifty','idx-banknifty-chg'],
-    'SENSEX': ['idx-sensex','idx-sensex-chg'],
-    'NIFTYIT': ['idx-niftyit','idx-niftyit-chg'],
+    'NIFTY50':    ['idx-nifty50','idx-nifty50-chg'],     // was 'NIFTY' — mismatch fixed
+    'BANKNIFTY':  ['idx-banknifty','idx-banknifty-chg'],
+    'SENSEX':     ['idx-sensex','idx-sensex-chg'],
+    'NIFTYIT':    ['idx-niftyit','idx-niftyit-chg'],
     'MIDCPNIFTY': ['idx-midcap','idx-midcap-chg'],
-    'INDIAVIX': ['idx-indiavix','idx-indiavix-chg'],
+    'INDIAVIX':   ['idx-indiavix','idx-indiavix-chg'],
+    // Angel One native symbol aliases (in case API returns different names)
+    'NIFTY':      ['idx-nifty50','idx-nifty50-chg'],
+    'NIFTY 50':   ['idx-nifty50','idx-nifty50-chg'],
+    'MIDCAP':     ['idx-midcap','idx-midcap-chg'],
   };
   const ids = map[tick.symbol];
   if (!ids) return;
@@ -4989,7 +5260,11 @@ function saveGHSettingsAndVerify() {
 
 function clearAngelOneCreds() {
   localStorage.removeItem('gh_repo');
+  GHData.cache = null;
+  GHData.lastFetch = 0;
+  GHData.resolvedUrl = null;
   showToast('Settings cleared', 'info');
+  checkGHDataStatus();
 }
 
 async function checkGHDataStatus() {
@@ -5005,31 +5280,44 @@ async function checkGHDataStatus() {
     ? savedRepo.replace(/\/$/, '') + '/data.json?t=' + Date.now()
     : GH_DATA_URL + '?t=' + Date.now();
 
-  try {
-    const r = await fetch(dataUrl);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const d = await r.json();
-    if (d && d.timestamp) {
-      const age = Math.round((Date.now() - new Date(d.timestamp).getTime()) / 1000);
-      dot.style.background = age < 120 ? 'var(--green)' : 'var(--yellow)';
-      txt.textContent = age < 120
-        ? `✅ Live data — updated ${age}s ago (${d.source || 'GitHub Actions'})`
-        : `⚠ Data is ${Math.round(age/60)}m old — is the workflow running?`;
-      // Also refresh the main GHData cache
+  // Try the smart URL candidates (same logic as GHData.get)
+  const candidates = [];
+  if (savedRepo) candidates.push(savedRepo.replace(/\/$/, '') + '/data.json');
+  candidates.push('./data.json');
+
+  let found = false;
+  for (const url of candidates) {
+    try {
+      const r = await fetch(url + '?t=' + Date.now());
+      if (!r.ok) continue;
+      const d = await r.json();
+      if (!d || typeof d !== 'object') continue;
+      // Found valid data.json
+      found = true;
       GHData.cache = d;
       GHData.lastFetch = Date.now();
-    } else {
-      dot.style.background = 'var(--red)';
-      txt.textContent = '❌ data.json found but has no timestamp — check workflow logs';
+      GHData.resolvedUrl = url;
+      if (d.timestamp) {
+        const age = Math.round((Date.now() - new Date(d.timestamp).getTime()) / 1000);
+        const fresh = age < 180;
+        dot.style.background = fresh ? 'var(--green)' : 'var(--yellow)';
+        txt.textContent = fresh
+          ? `✅ Live — updated ${age}s ago · ${d.source || 'GitHub Actions'} · ${url}`
+          : `⚠ Data is ${Math.round(age/60)}m old — is the workflow running? · ${url}`;
+      } else {
+        dot.style.background = 'var(--yellow)';
+        txt.textContent = `⚠ data.json reachable but no timestamp · ${url}`;
+      }
+      break;
+    } catch(e) {
+      console.warn('[checkGHDataStatus]', url, e.message);
     }
-  } catch(e) {
+  }
+  if (!found) {
     dot.style.background = 'var(--red)';
-    if (!savedRepo) {
-      txt.textContent = '⬆ Enter your GitHub Pages URL in Step 3 to verify';
-      dot.style.background = 'var(--text3)';
-    } else {
-      txt.textContent = '❌ Cannot reach data.json at that URL — check Pages is enabled';
-    }
+    txt.textContent = savedRepo
+      ? `❌ Cannot reach data.json — check GitHub Pages is enabled at ${savedRepo}`
+      : '❌ data.json not found — run GitHub Actions workflow once first';
   }
 }
 
@@ -5075,19 +5363,25 @@ def generate_totp(secret_b32: str) -> str:
     return str(code % 1000000).zfill(6)
 
 # ── Angel One API helpers ────────────────────────────────────────
-def ao_post(path: str, payload: dict, headers: dict = None) -> dict:
+def ao_post(path: str, payload: dict, headers: dict = None, token: str = None) -> dict:
+    """POST to Angel One SmartAPI. Pass token= for authenticated endpoints."""
     url = BASE_URL + path
     data = json.dumps(payload).encode()
-    req = urllib.request.Request(url, data=data,
-          headers={"Content-Type": "application/json",
-                   "Accept": "application/json",
-                   "X-UserType": "USER",
-                   "X-SourceID": "WEB",
-                   "X-ClientLocalIP": "127.0.0.1",
-                   "X-ClientPublicIP": "127.0.0.1",
-                   "X-MACAddress": "00:00:00:00:00:00",
-                   "X-PrivateKey": API_KEY,
-                   **(headers or {})})
+    base_headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "X-UserType": "USER",
+        "X-SourceID": "WEB",
+        "X-ClientLocalIP": "127.0.0.1",
+        "X-ClientPublicIP": "127.0.0.1",
+        "X-MACAddress": "00:00:00:00:00:00",
+        "X-PrivateKey": API_KEY,
+    }
+    if token:
+        base_headers["Authorization"] = f"Bearer {token}"
+    if headers:
+        base_headers.update(headers)
+    req = urllib.request.Request(url, data=data, headers=base_headers)
     with urllib.request.urlopen(req, timeout=15) as r:
         return json.loads(r.read())
 
@@ -5129,18 +5423,36 @@ INDEX_TOKENS = {
 }
 
 def fetch_indices(token: str) -> dict:
+    """Fetch NSE index LTP using Angel One SmartAPI v2 POST endpoint."""
     indices = {}
-    for sym, tok in INDEX_TOKENS.items():
-        try:
-            resp = ao_get(f"/rest/secure/angelbroking/market/v1/quote/?mode=FULL&exchangeTokens={{\"NSE\":[\"{tok}\"]}}", token)
-            if resp.get("status") and resp["data"].get("fetched"):
-                d = resp["data"]["fetched"][0]
-                ltp = float(d.get("ltp", 0))
+    # Batch all tokens in one POST request for efficiency
+    token_list = list(INDEX_TOKENS.values())
+    try:
+        resp = ao_post(
+            "/rest/secure/angelbroking/market/v1/quote/",
+            {"mode": "FULL", "exchangeTokens": {"NSE": token_list}},
+            token=token
+        )
+        if resp.get("status") and resp.get("data", {}).get("fetched"):
+            # Build reverse map: token_id → symbol_key
+            tok_to_sym = {v: k for k, v in INDEX_TOKENS.items()}
+            for d in resp["data"]["fetched"]:
+                sym_tok = str(d.get("symbolToken", ""))
+                sym = tok_to_sym.get(sym_tok)
+                if not sym:
+                    continue
+                ltp   = float(d.get("ltp", 0) or 0)
                 close = float(d.get("close", ltp) or ltp)
                 chg_pct = ((ltp - close) / close * 100) if close else 0
-                indices[sym] = {"ltp": round(ltp, 2), "chg": round(chg_pct, 2), "close": round(close, 2)}
-        except Exception as e:
-            print(f"  ⚠ Index {sym}: {e}")
+                indices[sym] = {
+                    "ltp":  round(ltp, 2),
+                    "chg":  round(chg_pct, 2),
+                    "close": round(close, 2),
+                }
+        else:
+            print(f"  ⚠ Index fetch: {resp.get('message', 'no data')}")
+    except Exception as e:
+        print(f"  ⚠ fetch_indices error: {e}")
     return indices
 
 # ── Fetch top movers ─────────────────────────────────────────────
@@ -5153,84 +5465,99 @@ NIFTY50_SYMBOLS = [
 ]
 
 def fetch_movers(token: str) -> dict:
+    """Fetch NIFTY50 stock movers via batch POST quote request."""
     gainers, losers = [], []
     try:
-        tok_str = ",".join(f'"{t}"' for _, t in NIFTY50_SYMBOLS)
-        resp = ao_get(f'/rest/secure/angelbroking/market/v1/quote/?mode=LTP&exchangeTokens={{"NSE":[{tok_str}]}}', token)
-        if resp.get("status") and resp["data"].get("fetched"):
-            sym_map = {t: s for s, t in NIFTY50_SYMBOLS}
+        token_ids = [t for _, t in NIFTY50_SYMBOLS]
+        sym_map   = {t: s for s, t in NIFTY50_SYMBOLS}
+        resp = ao_post(
+            "/rest/secure/angelbroking/market/v1/quote/",
+            {"mode": "LTP", "exchangeTokens": {"NSE": token_ids}},
+            token=token
+        )
+        if resp.get("status") and resp.get("data", {}).get("fetched"):
             rows = []
             for d in resp["data"]["fetched"]:
-                sym = sym_map.get(d.get("symbolToken",""), d.get("tradingSymbol",""))
-                ltp = float(d.get("ltp", 0))
-                close = float(d.get("close", ltp) or ltp)
-                chg = ((ltp - close) / close * 100) if close else 0
-                rows.append({"symbol": sym, "ltp": round(ltp,2), "chg": round(chg,2), "series": "EQ"})
+                sym_tok = str(d.get("symbolToken", ""))
+                sym     = sym_map.get(sym_tok, d.get("tradingSymbol", sym_tok))
+                ltp     = float(d.get("ltp", 0) or 0)
+                close   = float(d.get("close", ltp) or ltp)
+                chg     = ((ltp - close) / close * 100) if close else 0
+                rows.append({"symbol": sym, "ltp": round(ltp, 2), "chg": round(chg, 2), "series": "EQ"})
             rows.sort(key=lambda x: x["chg"], reverse=True)
             gainers = rows[:10]
             losers  = rows[-10:][::-1]
+        else:
+            print(f"  ⚠ Movers fetch: {resp.get('message', 'no data')}")
     except Exception as e:
-        print(f"  ⚠ Movers: {e}")
+        print(f"  ⚠ fetch_movers error: {e}")
     return {"gainers": gainers, "losers": losers}
 
 # ── Fetch F&O option chain (NIFTY, current expiry) ───────────────
 def fetch_fo_chain(token: str) -> dict:
+    """Fetch NIFTY option chain from Angel One SmartAPI."""
     try:
-        resp = ao_get(
-            "/rest/secure/angelbroking/market/v1/getCandleData?"
-            "exchange=NFO&symboltoken=99926000&interval=ONE_MINUTE",
-            token
+        # Get nearest weekly expiry
+        resp = ao_post(
+            "/rest/secure/angelbroking/market/v1/optionChain",
+            {"name": "NIFTY", "expirydate": "", "strikecount": 12},
+            token=token
         )
-        # Use OC endpoint instead
-        resp2 = ao_post("/rest/secure/angelbroking/market/v1/optionChain",
-                        {"name": "NIFTY", "expirydate": "", "strikecount": 12},
-                        {"Authorization": f"Bearer {token}"})
-        if not (resp2.get("status") and resp2.get("data")):
+        if not (resp.get("status") and resp.get("data")):
+            print(f"  ⚠ F&O chain: {resp.get('message','no data')}")
             return {}
-        oc = resp2["data"]
-        spot = float(oc.get("underlyingLTP", 22500))
-        atm = round(spot / 50) * 50
+
+        oc   = resp["data"]
+        spot = float(oc.get("underlyingLTP", 22500) or 22500)
+        atm  = round(spot / 50) * 50
+
         chain_data = oc.get("OC", {})
         strikes = []
         call_oi_total = put_oi_total = 0
-        for strike_price, opt in sorted(chain_data.items(), key=lambda x: float(x[0])):
-            sp = float(strike_price)
-            c = opt.get("CE", {})
-            p = opt.get("PE", {})
-            call_oi  = int(c.get("openInterest", 0))
-            put_oi   = int(p.get("openInterest", 0))
+
+        for strike_price_str, opt in sorted(chain_data.items(), key=lambda x: float(x[0])):
+            sp    = float(strike_price_str)
+            c     = opt.get("CE", {}) or {}
+            p     = opt.get("PE", {}) or {}
+            call_oi = int(c.get("openInterest", 0) or 0)
+            put_oi  = int(p.get("openInterest",  0) or 0)
             call_oi_total += call_oi
             put_oi_total  += put_oi
             strikes.append({
-                "strike": sp,
-                "atm": abs(sp - atm) < 1,
-                "callOI":     call_oi,
-                "callLTP":    float(c.get("lastPrice", 0)),
-                "callPrevLTP":float(c.get("closePrice", 0)),
-                "putOI":      put_oi,
-                "putLTP":     float(p.get("lastPrice", 0)),
-                "putPrevLTP": float(p.get("closePrice", 0)),
+                "strike":      sp,
+                "atm":         abs(sp - atm) <= 25,
+                "callOI":      call_oi,
+                "callLTP":     float(c.get("lastPrice",  0) or 0),
+                "callPrevLTP": float(c.get("closePrice", 0) or 0),
+                "putOI":       put_oi,
+                "putLTP":      float(p.get("lastPrice",  0) or 0),
+                "putPrevLTP":  float(p.get("closePrice", 0) or 0),
             })
-        pcr = (put_oi_total / call_oi_total) if call_oi_total else 1.0
-        # Max pain
+
+        pcr = round(put_oi_total / call_oi_total, 3) if call_oi_total else 1.0
+
+        # Max pain calculation
         max_pain = atm
         min_pain_val = float("inf")
         for s in strikes:
-            pain = sum(max(0, (s["strike"] - x["strike"])) * x["callOI"] +
-                       max(0, (x["strike"] - s["strike"])) * x["putOI"]
-                       for x in strikes)
+            pain = sum(
+                max(0, s["strike"] - x["strike"]) * x["callOI"] +
+                max(0, x["strike"] - s["strike"]) * x["putOI"]
+                for x in strikes
+            )
             if pain < min_pain_val:
                 min_pain_val = pain
                 max_pain = s["strike"]
+
         return {
-            "pcr": round(pcr, 3),
+            "pcr":     pcr,
             "maxpain": max_pain,
             "totaloi": call_oi_total + put_oi_total,
-            "spot": round(spot, 2),
-            "chain": strikes,
+            "spot":    round(spot, 2),
+            "chain":   strikes,
         }
     except Exception as e:
-        print(f"  ⚠ F&O chain: {e}")
+        print(f"  ⚠ fetch_fo_chain error: {e}")
         return {}
 
 # ── Write data.json to GitHub via API ───────────────────────────
@@ -6878,12 +7205,7 @@ function switchTF(btn) {
   }
 }
 
-function renderOverview() {
-  renderOverviewContent();
-  renderNews();
-  renderCalendar();
-  drawFearGreed(62);
-}
+// renderOverview() — live version defined above (async, fetchLiveMarketAssets)
 
 function renderOverviewContent() {
   const d = TF_DATA[currentTF];
@@ -7282,21 +7604,7 @@ function refreshNewsTab() {
   renderNewsTab();
 }
 
-function renderNewsTab() {
-  // Update timestamp
-  const tsEl = document.getElementById('newsLastUpdated');
-  if (tsEl) tsEl.textContent = 'Updated ' + new Date().toLocaleTimeString();
-  // Render all components
-  renderTicker();
-  renderNewsTabFeed();
-  renderCalendar();
-  renderEarnings();
-  renderMacroHeatmap();
-  drawFearGreedNews(72);
-  // Also update the date
-  const dateEl = document.getElementById('fgDate');
-  if (dateEl) dateEl.textContent = new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
-}
+// renderNewsTab() — live version defined above (async, fetchLiveNews)
 
 function renderNews() {
   renderNewsFeed();
@@ -7575,11 +7883,7 @@ function renderBenchmarks() {
     </div>`).join('');
 }
 
-function renderScreener() {
-  // Always regenerate fresh data when tab is opened
-  screenerData = generateScreenerData();
-  runScreener();
-}
+// renderScreener() — live version defined above (async, fetchLiveScreenerData)
 
 // ══════════════════════════════════════════════
 // PSYCHOLOGY
@@ -9345,6 +9649,30 @@ window.addEventListener('appinstalled',()=>{
 });
 
 // Service worker via blob (works on GitHub Pages)
+// ── Inject PWA manifest dynamically (single-file PWA) ──────────
+(function injectManifest() {
+  const manifest = {
+    name: "Zen Trading Journal",
+    short_name: "ZenJournal",
+    description: "Professional trading journal with live NSE/BSE, crypto, forex & US markets",
+    start_url: "./",
+    display: "standalone",
+    background_color: "#0d1117",
+    theme_color: "#6c63ff",
+    orientation: "any",
+    icons: [
+      { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%230d1117'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle' fill='%236c63ff'%3E%E7%A6%85%3C/text%3E%3C/svg%3E", sizes: "192x192", type: "image/svg+xml" },
+      { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%230d1117'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle' fill='%236c63ff'%3E%E7%A6%85%3C/text%3E%3C/svg%3E", sizes: "512x512", type: "image/svg+xml" }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('link');
+  link.rel   = 'manifest';
+  link.href  = url;
+  document.head.appendChild(link);
+})();
+
 if('serviceWorker' in navigator){
   // SW registration only works over HTTP/HTTPS (not file://)
   // blob: URL registration is rejected by Chrome — use inline blob only as a last resort
@@ -9803,8 +10131,6 @@ async function saveTrade() {
 
 
 </script>
-
-</div>
 
 <!-- ══ ONBOARDING OVERLAY ══ -->
 <div id="onboardingOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.94);backdrop-filter:blur(12px);align-items:center;justify-content:center;padding:20px">

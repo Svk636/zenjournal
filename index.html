@@ -8023,221 +8023,301 @@ async function cAIAnalyse() {
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   PWA BOOTSTRAP
+   PWA  —  platform-aware install UX
+   
+   REALITY: A single .html file cannot trigger
+   Chrome's beforeinstallprompt reliably because
+   the manifest needs a real same-origin URL.
+   
+   STRATEGY:
+   1. Show a prominent manual install modal on 
+      first visit, tailored per platform.
+   2. ALSO intercept beforeinstallprompt if it 
+      fires (e.g. file hosted on HTTPS server).
+   3. Keep all offline/SW/meta infra for when
+      the file IS hosted properly.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 (function() {
-  /* ── 1. Generate icon PNGs via Canvas (no external files needed) ── */
-  function makeIconDataURL(size) {
-    const c = document.createElement('canvas');
-    c.width = c.height = size;
-    const ctx = c.getContext('2d');
-    // Background
-    ctx.fillStyle = '#060609';
-    ctx.beginPath();
-    ctx.roundRect(0, 0, size, size, size * 0.18);
-    ctx.fill();
-    // Amber circle accent
-    const r = size * 0.38;
-    ctx.beginPath();
-    ctx.arc(size / 2, size / 2, r, 0, Math.PI * 2);
-    ctx.strokeStyle = '#d4a847';
-    ctx.lineWidth = size * 0.04;
-    ctx.stroke();
-    // "Z" letter
-    ctx.fillStyle = '#f0c96a';
-    ctx.font = `${size * 0.38}px EB Garamond, Georgia, serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fontStyle = 'italic';
-    ctx.fillText('Z', size / 2 + size * 0.02, size / 2 + size * 0.03);
-    return c.toDataURL('image/png');
-  }
 
-  /* Set icons once fonts may have loaded (slight delay is fine for icons) */
-  function injectIcons() {
-    const icon512 = makeIconDataURL(512);
-    const icon192 = makeIconDataURL(192);
-    const icon180 = makeIconDataURL(180);
-    const icon32  = makeIconDataURL(32);
-    document.getElementById('pwa-icon-apple').href  = icon180;
-    document.getElementById('pwa-icon-192').href    = icon192;
-    document.getElementById('pwa-icon-512').href    = icon512;
-    document.getElementById('pwa-favicon').href     = icon32;
+  /* ─── Platform detection ─── */
+  var ua = navigator.userAgent;
+  var isIOS       = /iphone|ipad|ipod/i.test(ua);
+  var isAndroid   = /android/i.test(ua);
+  var isSamsung   = /samsungbrowser/i.test(ua);
+  var isFirefox   = /firefox/i.test(ua) && !isIOS;
+  var isChrome    = /chrome/i.test(ua) && !/edge|edg\//i.test(ua) && !isSamsung;
+  var isEdge      = /edge|edg\//i.test(ua);
+  var isMacSafari = /^((?!chrome|android).)*safari/i.test(ua) && !isIOS;
+  var isDesktop   = !isIOS && !isAndroid;
+  var isStandalone = (window.navigator.standalone === true) ||
+                     window.matchMedia('(display-mode: standalone)').matches;
 
-    /* ── 2. Inject Web App Manifest as Blob URL ── */
-    const manifest = {
-      name: 'Zen Journal',
-      short_name: 'Zen Journal',
-      description: 'A mindful trading journal — log trades, track rules, and grow.',
-      start_url: './',
-      display: 'standalone',
-      orientation: 'portrait-primary',
-      background_color: '#060609',
-      theme_color: '#060609',
-      categories: ['finance', 'productivity'],
-      icons: [
-        { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-        { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+  /* ─── Don't show if already installed ─── */
+  if (isStandalone) return;
+
+  /* ─── Don't show if dismissed within 7 days ─── */
+  var DISMISS_KEY = 'zj_install_dismissed';
+  try {
+    var ts = parseInt(localStorage.getItem(DISMISS_KEY) || '0');
+    if (ts && (Date.now() - ts) < 7 * 24 * 60 * 60 * 1000) return;
+  } catch(e) {}
+
+  /* ─── Per-platform instructions ─── */
+  function getInstructions() {
+    if (isIOS) return {
+      title: 'Install on iPhone / iPad',
+      icon: '📲',
+      steps: [
+        '<span class="pi-step-icon">1</span> Tap the <strong>Share</strong> button <span class="pi-share-icon">⎙</span> at the bottom of Safari',
+        '<span class="pi-step-icon">2</span> Scroll down and tap <strong>"Add to Home Screen"</strong> <span style="font-size:13px">＋</span>',
+        '<span class="pi-step-icon">3</span> Tap <strong>"Add"</strong> — Zen Journal appears on your home screen'
       ],
-      shortcuts: [
-        { name: 'Log a Trade',    short_name: 'Log Trade',    description: 'Quickly log a new trade',        url: './#log',      icons: [{ src: icon192, sizes: '192x192' }] },
-        { name: 'Pre-Market',     short_name: 'Pre-Market',   description: 'Open pre-market ritual',         url: './#premarket',icons: [{ src: icon192, sizes: '192x192' }] },
-        { name: 'Daily Review',   short_name: 'Review',       description: 'Open daily review',              url: './#review',   icons: [{ src: icon192, sizes: '192x192' }] }
-      ]
+      note: 'Must use <strong>Safari</strong>. Chrome/Firefox on iOS cannot install web apps.',
+      showArrow: true
     };
-    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-    document.getElementById('pwa-manifest').href = URL.createObjectURL(blob);
+    if (isSamsung) return {
+      title: 'Install on Samsung Browser',
+      icon: '📲',
+      steps: [
+        '<span class="pi-step-icon">1</span> Tap the <strong>Menu</strong> button (three lines) at the bottom',
+        '<span class="pi-step-icon">2</span> Tap <strong>"Add page to"</strong>',
+        '<span class="pi-step-icon">3</span> Choose <strong>"Home screen"</strong>'
+      ],
+      note: 'For the best experience, use <strong>Samsung Internet Browser</strong>.'
+    };
+    if (isAndroid && isChrome) return {
+      title: 'Install on Android',
+      icon: '📲',
+      steps: [
+        '<span class="pi-step-icon">1</span> Tap the <strong>⋮ menu</strong> (top-right of Chrome)',
+        '<span class="pi-step-icon">2</span> Tap <strong>"Add to Home screen"</strong>',
+        '<span class="pi-step-icon">3</span> Tap <strong>"Add"</strong> to confirm'
+      ],
+      note: 'Works offline once installed. Your data is always saved locally.'
+    };
+    if (isAndroid && isFirefox) return {
+      title: 'Install on Android (Firefox)',
+      icon: '📲',
+      steps: [
+        '<span class="pi-step-icon">1</span> Tap the <strong>⋮ menu</strong> (top-right)',
+        '<span class="pi-step-icon">2</span> Tap <strong>"Install"</strong> or <strong>"Add to Home screen"</strong>'
+      ],
+      note: 'For full PWA support on Android, Chrome is recommended.'
+    };
+    if (isEdge) return {
+      title: 'Install as Desktop App (Edge)',
+      icon: '🖥️',
+      steps: [
+        '<span class="pi-step-icon">1</span> Click the <strong>⋯ menu</strong> (top-right of Edge)',
+        '<span class="pi-step-icon">2</span> Click <strong>"Apps"</strong>',
+        '<span class="pi-step-icon">3</span> Click <strong>"Install this site as an app"</strong>'
+      ],
+      note: 'Runs as a standalone window — no browser chrome.'
+    };
+    if (isMacSafari) return {
+      title: 'Install on Mac (Safari)',
+      icon: '🖥️',
+      steps: [
+        '<span class="pi-step-icon">1</span> Click <strong>File</strong> in the menu bar',
+        '<span class="pi-step-icon">2</span> Click <strong>"Add to Dock"</strong>'
+      ],
+      note: 'Requires macOS Sonoma (14) or later with Safari 17+.'
+    };
+    if (isDesktop && isChrome) return {
+      title: 'Install as Desktop App',
+      icon: '🖥️',
+      steps: [
+        '<span class="pi-step-icon">1</span> Look for the <strong>install icon</strong> <span style="font-size:13px">⊕</span> in the address bar',
+        '<span class="pi-step-icon">2</span> Click it and choose <strong>"Install"</strong>',
+        '<span class="pi-step-icon">3</span> Or: Chrome menu <strong>⋮</strong> → <strong>"Cast, save, and share"</strong> → <strong>"Install page as app"</strong>'
+      ],
+      note: 'Requires the file to be served over HTTPS or localhost.'
+    };
+    /* Generic fallback */
+    return {
+      title: 'Add to Home Screen',
+      icon: '📲',
+      steps: [
+        '<span class="pi-step-icon">1</span> Open your browser\'s <strong>menu</strong>',
+        '<span class="pi-step-icon">2</span> Look for <strong>"Add to Home Screen"</strong> or <strong>"Install App"</strong>',
+        '<span class="pi-step-icon">3</span> Confirm the installation'
+      ],
+      note: 'Works best in Chrome (Android/Desktop) or Safari (iOS).'
+    };
   }
 
-  /* Run after a short delay so canvas fonts are available */
-  if (document.fonts) {
-    document.fonts.ready.then(injectIcons);
-  } else {
-    setTimeout(injectIcons, 600);
+  /* ─── Inject modal styles ─── */
+  function injectStyles() {
+    if (document.getElementById('pi-styles')) return;
+    var s = document.createElement('style');
+    s.id = 'pi-styles';
+    s.textContent = [
+      '@keyframes pi-in{from{opacity:0;transform:translateY(40px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}',
+      '@keyframes pi-bg-in{from{opacity:0}to{opacity:1}}',
+      '@keyframes pi-bounce{0%,100%{transform:translateY(0)}60%{transform:translateY(6px)}}',
+      '#pi-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.82);backdrop-filter:blur(12px);z-index:10000;display:flex;align-items:flex-end;justify-content:center;padding:0;animation:pi-bg-in 0.2s ease}',
+      '#pi-overlay.pi-desktop{align-items:center;padding:20px}',
+      '#pi-box{background:#0c0c14;border:1px solid rgba(212,168,71,0.22);border-radius:14px 14px 0 0;width:100%;max-width:480px;padding:28px 24px 36px;position:relative;animation:pi-in 0.35s cubic-bezier(0.16,1,0.3,1)}',
+      '#pi-overlay.pi-desktop #pi-box{border-radius:10px;max-width:420px;padding:28px 26px 26px}',
+      '.pi-handle{width:36px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin:0 auto 20px}',
+      '.pi-icon{font-size:32px;margin-bottom:10px;text-align:center}',
+      '.pi-title{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:500;color:#f0c96a;letter-spacing:0.06em;text-align:center;margin-bottom:20px;text-transform:uppercase}',
+      '.pi-steps{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}',
+      '.pi-step{display:flex;align-items:flex-start;gap:10px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:#8888a8;line-height:1.65}',
+      '.pi-step strong{color:#cccce0}',
+      '.pi-step-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:rgba(212,168,71,0.12);border:1px solid rgba(212,168,71,0.25);color:#d4a847;font-size:9px;font-weight:600;flex-shrink:0;margin-top:2px}',
+      '.pi-share-icon{display:inline-block;font-size:14px;color:#cccce0;vertical-align:middle}',
+      '.pi-note{font-family:"IBM Plex Mono",monospace;font-size:9.5px;color:#5a5a78;line-height:1.6;text-align:center;margin-bottom:20px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:4px}',
+      '.pi-note strong{color:#8888a8}',
+      '.pi-arrow{text-align:center;font-size:24px;color:rgba(212,168,71,0.5);margin-top:4px;animation:pi-bounce 1.4s infinite}',
+      '.pi-dismiss{width:100%;background:rgba(212,168,71,0.08);border:1px solid rgba(212,168,71,0.2);color:#d4a847;font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;padding:12px;border-radius:6px;cursor:pointer;transition:background 0.15s}',
+      '.pi-dismiss:hover{background:rgba(212,168,71,0.15)}',
+      '.pi-close{position:absolute;top:16px;right:18px;background:none;border:none;color:#5a5a78;font-size:22px;cursor:pointer;line-height:1;transition:color 0.12s;padding:0}',
+      '.pi-close:hover{color:#cccce0}',
+      '.pi-native-btn{width:100%;background:#d4a847;border:none;color:#060609;font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:13px;border-radius:6px;cursor:pointer;margin-bottom:10px;transition:background 0.15s}',
+      '.pi-native-btn:hover{background:#f0c96a}',
+    ].join('');
+    document.head.appendChild(s);
   }
 
-  /* ── 3. Register Service Worker (inline via Blob URL) ── */
-  if ('serviceWorker' in navigator) {
-    const CACHE  = 'zen-journal-v1';
-    const swCode = `
-const CACHE_NAME = '${CACHE}';
-const OFFLINE_URLS = ['./'];
+  /* ─── Build and show modal ─── */
+  function showInstallModal(nativePrompt) {
+    if (document.getElementById('pi-overlay')) return;
+    injectStyles();
+    var inst = getInstructions();
 
-self.addEventListener('install', e => {
-  self.skipWaiting();
-  e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(OFFLINE_URLS))
-  );
-});
+    var overlay = document.createElement('div');
+    overlay.id = 'pi-overlay';
+    if (isDesktop) overlay.classList.add('pi-desktop');
 
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
-  );
-});
+    var stepsHTML = inst.steps.map(function(s) {
+      return '<div class="pi-step">' + s + '</div>';
+    }).join('');
 
-self.addEventListener('fetch', e => {
-  /* Network-first for Google Fonts & APIs; cache-first for everything else */
-  const url = e.request.url;
-  if (url.includes('fonts.googleapis') || url.includes('fonts.gstatic') || url.includes('api.anthropic')) {
-    e.respondWith(
-      fetch(e.request).catch(() => caches.match(e.request))
-    );
-    return;
-  }
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(response => {
-        if (!response || response.status !== 200 || response.type === 'opaque') return response;
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-        return response;
-      }).catch(() => caches.match('./'));
-    })
-  );
-});
+    var arrowHTML = (inst.showArrow && isIOS)
+      ? '<div class="pi-arrow">↓</div>'
+      : '';
 
-/* Handle shortcut URL hash navigation via message */
-self.addEventListener('message', e => {
-  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
-});
-`;
-    const swBlob = new Blob([swCode], { type: 'application/javascript' });
-    const swURL  = URL.createObjectURL(swBlob);
-    navigator.serviceWorker.register(swURL, { scope: './' })
-      .then(reg => {
-        console.log('[PWA] Service Worker registered:', reg.scope);
-        /* Check for updates on each visit */
-        reg.addEventListener('updatefound', () => {
-          const nw = reg.installing;
-          nw.addEventListener('statechange', () => {
-            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-              showUpdateBanner();
-            }
-          });
+    var nativeBtnHTML = nativePrompt
+      ? '<button class="pi-native-btn" id="pi-native-btn">📲 Install Now (One Tap)</button>'
+      : '';
+
+    overlay.innerHTML =
+      '<div id="pi-box">' +
+        (isIOS ? '<div class="pi-handle"></div>' : '') +
+        '<button class="pi-close" aria-label="Close" onclick="window._piClose()">×</button>' +
+        '<div class="pi-icon">' + inst.icon + '</div>' +
+        '<div class="pi-title">' + inst.title + '</div>' +
+        nativeBtnHTML +
+        '<div class="pi-steps">' + stepsHTML + '</div>' +
+        (inst.note ? '<div class="pi-note">' + inst.note + '</div>' : '') +
+        arrowHTML +
+        '<button class="pi-dismiss" onclick="window._piClose()">Got it — close</button>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    /* Close on backdrop click */
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) window._piClose();
+    });
+
+    /* Wire native install button if available */
+    if (nativePrompt) {
+      var btn = document.getElementById('pi-native-btn');
+      if (btn) btn.addEventListener('click', function() {
+        nativePrompt.prompt();
+        nativePrompt.userChoice.then(function(r) {
+          if (r.outcome === 'accepted') window._piClose(true);
         });
-      })
-      .catch(err => console.warn('[PWA] SW registration failed:', err));
-  }
-
-  /* ── 4. Install Prompt ── */
-  let _deferredInstall = null;
-  window.addEventListener('beforeinstallprompt', e => {
-    e.preventDefault();
-    _deferredInstall = e;
-    showInstallBanner();
-  });
-  window.addEventListener('appinstalled', () => {
-    hideInstallBanner();
-    _deferredInstall = null;
-    toast('✓ Zen Journal installed to home screen');
-  });
-
-  function showInstallBanner() {
-    if (document.getElementById('pwa-install-bar')) return;
-    const bar = document.createElement('div');
-    bar.id = 'pwa-install-bar';
-    bar.style.cssText = [
-      'position:fixed','bottom:0','left:0','right:0','z-index:9999',
-      'background:#0c0c14','border-top:1px solid rgba(212,168,71,0.25)',
-      'display:flex','align-items:center','gap:12px','padding:11px 18px',
-      'font-family:IBM Plex Mono,monospace','font-size:11px','color:#cccce0',
-      'animation:pwa-slide-up 0.3s cubic-bezier(0.16,1,0.3,1)'
-    ].join(';');
-    bar.innerHTML =
-      '<span style="flex:1">📲 Add <strong style="color:#f0c96a">Zen Journal</strong> to your home screen for offline access</span>' +
-      '<button onclick="window._pwaInstall()" style="background:#d4a847;color:#060609;border:none;font-family:inherit;font-size:9px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;padding:6px 14px;border-radius:2px;cursor:pointer;white-space:nowrap">Install</button>' +
-      '<button onclick="document.getElementById(\'pwa-install-bar\').remove()" style="background:none;border:none;color:#5a5a78;font-size:16px;cursor:pointer;padding:0 4px;line-height:1">×</button>';
-    document.body.appendChild(bar);
-
-    /* Inject animation keyframe once */
-    if (!document.getElementById('pwa-anim-style')) {
-      const s = document.createElement('style');
-      s.id = 'pwa-anim-style';
-      s.textContent = '@keyframes pwa-slide-up{from{transform:translateY(100%)}to{transform:translateY(0)}}';
-      document.head.appendChild(s);
+      });
     }
   }
 
-  function hideInstallBanner() {
-    const b = document.getElementById('pwa-install-bar');
-    if (b) b.remove();
-  }
-
-  window._pwaInstall = async function() {
-    if (!_deferredInstall) return;
-    _deferredInstall.prompt();
-    const { outcome } = await _deferredInstall.userChoice;
-    if (outcome === 'accepted') hideInstallBanner();
-    _deferredInstall = null;
+  window._piClose = function(installed) {
+    var el = document.getElementById('pi-overlay');
+    if (el) el.remove();
+    try {
+      if (!installed) localStorage.setItem(DISMISS_KEY, Date.now().toString());
+    } catch(e) {}
   };
 
-  /* ── 5. Update available banner ── */
-  function showUpdateBanner() {
-    if (document.getElementById('pwa-update-bar')) return;
-    const bar = document.createElement('div');
-    bar.id = 'pwa-update-bar';
-    bar.style.cssText = [
-      'position:fixed','top:50px','left:0','right:0','z-index:9998',
-      'background:#131320','border-bottom:1px solid rgba(212,168,71,0.2)',
-      'display:flex','align-items:center','gap:12px','padding:9px 18px',
-      'font-family:IBM Plex Mono,monospace','font-size:10px','color:#5a5a78'
-    ].join(';');
-    bar.innerHTML =
-      '<span style="flex:1">⟳ A new version of Zen Journal is ready</span>' +
-      '<button onclick="window.location.reload()" style="background:none;border:1px solid rgba(212,168,71,0.3);color:#d4a847;font-family:inherit;font-size:9px;padding:4px 12px;border-radius:2px;cursor:pointer;letter-spacing:0.08em">Reload</button>' +
-      '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#5a5a78;font-size:16px;cursor:pointer;line-height:1">×</button>';
-    document.body.appendChild(bar);
+  /* ─── Intercept native prompt if available (HTTPS + valid manifest) ─── */
+  var _nativePrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    _nativePrompt = e;
+    /* If modal is already open, inject native button */
+    var box = document.getElementById('pi-box');
+    if (box && !document.getElementById('pi-native-btn')) {
+      var btn = document.createElement('button');
+      btn.className = 'pi-native-btn';
+      btn.id = 'pi-native-btn';
+      btn.textContent = '📲 Install Now (One Tap)';
+      btn.addEventListener('click', function() {
+        e.prompt();
+        e.userChoice.then(function(r) {
+          if (r.outcome === 'accepted') window._piClose(true);
+        });
+      });
+      box.insertBefore(btn, box.querySelector('.pi-steps'));
+    }
+  });
+
+  window.addEventListener('appinstalled', function() {
+    window._piClose(true);
+    try { if (typeof toast === 'function') toast('✓ Zen Journal installed!'); } catch(e) {}
+  });
+
+  /* ─── Show on first visit (short delay so page renders first) ─── */
+  setTimeout(function() {
+    showInstallModal(_nativePrompt);
+  }, 1200);
+
+  /* ─── Service Worker (for when file IS hosted on HTTPS) ─── */
+  if ('serviceWorker' in navigator && !isIOS) {
+    var swCode = [
+      'var C="zen-v1";',
+      'self.addEventListener("install",function(e){self.skipWaiting();',
+      '  e.waitUntil(caches.open(C).then(function(c){',
+      '    return fetch("./").then(function(r){return c.put("./",r);}).catch(function(){});',
+      '  }));',
+      '});',
+      'self.addEventListener("activate",function(e){',
+      '  e.waitUntil(caches.keys().then(function(ks){',
+      '    return Promise.all(ks.filter(function(k){return k!==C;}).map(function(k){return caches.delete(k);}));',
+      '  }).then(function(){return self.clients.claim();}));',
+      '});',
+      'self.addEventListener("fetch",function(e){',
+      '  var u=e.request.url;',
+      '  if(u.includes("api.anthropic")||u.includes("fonts.googleapis")||u.includes("fonts.gstatic")){',
+      '    e.respondWith(fetch(e.request).catch(function(){return new Response("",{status:503});}));',
+      '    return;',
+      '  }',
+      '  e.respondWith(caches.match(e.request).then(function(cached){',
+      '    var fresh=fetch(e.request).then(function(r){',
+      '      if(r&&r.status===200&&r.type!=="opaque"){var cl=r.clone();caches.open(C).then(function(c){c.put(e.request,cl);});}',
+      '      return r;',
+      '    }).catch(function(){return caches.match("./");});',
+      '    return cached||fresh;',
+      '  }));',
+      '});'
+    ].join('\n');
+
+    try {
+      var swBlob = new Blob([swCode], { type: 'application/javascript' });
+      navigator.serviceWorker.register(URL.createObjectURL(swBlob), { scope: './' })
+        .catch(function(e){ console.warn('[PWA] SW:', e.message); });
+    } catch(e) {}
   }
 
-  /* ── 6. Handle offline / online events ── */
-  function onOffline() { toast('⚠ You are offline — data is saved locally'); }
-  function onOnline()  { toast('✓ Back online'); }
-  window.addEventListener('offline', onOffline);
-  window.addEventListener('online',  onOnline);
+  /* ─── Offline / online notifications ─── */
+  window.addEventListener('offline', function() {
+    try { if (typeof toast === 'function') toast('⚠ Offline — data saved locally'); } catch(e) {}
+  });
+  window.addEventListener('online', function() {
+    try { if (typeof toast === 'function') toast('✓ Back online'); } catch(e) {}
+  });
 
 })();
 </script>

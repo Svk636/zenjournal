@@ -3,27 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-
-<!-- PWA Core -->
-<meta name="application-name" content="Zen Journal">
-<meta name="description" content="A mindful trading journal — log trades, track rules, and grow.">
-<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Zen Journal">
 <meta name="theme-color" content="#060609">
-<meta name="msapplication-TileColor" content="#060609">
-<meta name="msapplication-navbutton-color" content="#060609">
-
-<!-- Manifest -->
-<link rel="manifest" href="#" id="pwa-manifest">
-
-<!-- Icons (inline SVG via data URI — no external files needed) -->
-<link rel="apple-touch-icon" sizes="180x180" id="pwa-icon-apple">
-<link rel="icon" type="image/png" sizes="192x192" id="pwa-icon-192">
-<link rel="icon" type="image/png" sizes="512x512" id="pwa-icon-512">
-<link rel="shortcut icon" id="pwa-favicon">
-
 <title>Zen Journal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -1068,6 +1049,8 @@ select.fi option{background:var(--lift)}
     <button class="t"     onclick="goTo('stockscreener',this)">Screener</button>
     <button class="t"     onclick="goTo('news',this)">News</button>
     <button class="t"     onclick="goTo('live',this)">Live Markets</button>
+    <button class="t" onclick="openReadme()" style="color:var(--cyan);border-bottom-color:transparent">Readme</button>
+    <button class="t" onclick="openUserFlow()" style="color:var(--cyan);border-bottom-color:transparent">User Flow</button>
   </nav>
   <div class="h-right">
     <button class="btn-sm" onclick="openApiSettings()">⚙ API</button>
@@ -4389,6 +4372,9 @@ let lrnData   = JSON.parse(ls('zj4_lrn') || '{"books":[],"mentors":[],"resources
 let intelSt  = JSON.parse(ls('zj4_intel')  || '{}');
 let scSyms   = JSON.parse(ls('zj4_sc')     || '["AAPL","MSFT","NVDA","TSLA","AMZN"]');
 let apiKeys  = JSON.parse(ls('zj4_api')    || '{}');
+let lpBooks   = JSON.parse(ls('zj4_lp_books')   || 'null');
+let lpSites   = JSON.parse(ls('zj4_lp_sites')   || 'null');
+let lpMentors = JSON.parse(ls('zj4_lp_mentors') || 'null');
 let editId   = null, _rating = 0, _passed = false;
 let _sKey    = 'date', _sDir  = -1;
 let quoteIdx = 0;
@@ -4551,7 +4537,7 @@ function saveTrade(){
 function openDetail(id){
   const t=trades.find(x=>x.id===id); if(!t)return;
   const pc=t.pnl!=null?(t.pnl>=0?'g':'r'):'';
-  const pnlStr=t.passed?'<span class="d-pass-label">PASSED — not taken</span>':`<span class="${pc}" style="font-size:20px;font-weight:300">${t.pnl>=0?'+':''}${t.pnl.toFixed(2)}</span>`;
+  const pnlStr=t.passed?'<span class="d-pass-label">PASSED — not taken</span>':`<span class="${pc}" style="font-size:20px;font-weight:300">${(t.pnl??0)>=0?'+':''}${(t.pnl??0).toFixed(2)}</span>`;
   const rStr=t.R!=null?`<span style="color:${t.R>=0?'var(--green)':'var(--red)'}">${t.R>=0?'+':''}${t.R.toFixed(2)}R</span>`:'—';
   const dots=[1,2,3,4,5].map(n=>`<div class="rdot ${n<=(t.rating||0)?'on':''}"></div>`).join('');
   $('detail-title').textContent=t.symbol+' · '+t.date;
@@ -4676,7 +4662,7 @@ function renderTrades(){
 }
 function tRow(t,showDel){
   const pc=t.pnl!=null?(t.pnl>=0?'g':'r'):'';
-  const pnlStr=t.passed?`<span class="badge bp">passed</span>`:`<span class="${pc}">${t.pnl>=0?'+':''}${t.pnl.toFixed(2)}</span>`;
+  const pnlStr=t.passed?`<span class="badge bp">passed</span>`:`<span class="${pc}">${(t.pnl??0)>=0?'+':''}${(t.pnl??0).toFixed(2)}</span>`;
   const rStr=t.R!=null?`<span style="color:${t.R>=0?'var(--green)':'var(--red)'}">${t.R>=0?'+':''}${t.R.toFixed(1)}R</span>`:'<span style="color:var(--ghost)">—</span>';
   const dirB=t.passed?'<span class="badge bp">—</span>':t.direction==='Long'?'<span class="badge bl">L</span>':'<span class="badge bs">S</span>';
   const dots=[1,2,3,4,5].map(n=>`<div class="rdot ${n<=(t.rating||0)?'on':''}"></div>`).join('');
@@ -5294,7 +5280,7 @@ function lrnOpenModal() {
   _lrnImpact = 5;
   document.querySelectorAll('#lrn-impact-btns .lrn-impact-btn').forEach(b => b.classList.toggle('on', parseInt(b.dataset.n) === 5));
   const fields = ['lrn-m-type','lrn-m-source','lrn-m-insight','lrn-m-apply'];
-  fields.forEach(id => { const el=$(id); if(el && el.tagName==='INPUT'||el.tagName==='TEXTAREA') el.value=''; });
+  fields.forEach(id => { const el=$(id); if(el && (el.tagName==='INPUT'||el.tagName==='TEXTAREA')) el.value=''; });
   const typeEl = $('lrn-m-type');
   if (typeEl) typeEl.value = 'book';
   $('lrn-modal').classList.add('on');
@@ -5581,7 +5567,7 @@ function drRenderGlance() {
     <div class="dr-glance-row"><span class="dr-glance-label">Wins / Losses</span><span class="dr-glance-val"><span style="color:var(--green)">${wins.length}W</span> / <span style="color:var(--red)">${losses.length}L</span></span></div>
     <div class="dr-glance-row"><span class="dr-glance-label">Win Rate</span><span class="dr-glance-val">${dayTrades.length?(wins.length/dayTrades.length*100).toFixed(0)+'%':'—'}</span></div>
     <div style="margin-top:10px">
-      ${dayTrades.map(t=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--rule);font-size:10px"><span style="color:var(--text);font-weight:500">${esc(t.symbol)}</span><span style="color:${t.pnl>=0?'var(--green)':'var(--red)'}">${t.pnl>=0?'+':''}${t.pnl.toFixed(2)}</span></div>`).join('')}
+      ${dayTrades.map(t=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--rule);font-size:10px"><span style="color:var(--text);font-weight:500">${esc(t.symbol)}</span><span style="color:${(t.pnl??0)>=0?'var(--green)':'var(--red)'}">${(t.pnl??0)>=0?'+':''}${(t.pnl??0).toFixed(2)}</span></div>`).join('')}
     </div>`;
 }
 
@@ -7607,15 +7593,53 @@ function clearApiKeys(){apiKeys={};lss('zj4_api',apiKeys);sv('api-finnhub','');t
    BACKUP / RESTORE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 function exportJSON(){
-  if(!trades.length){toast('Nothing to back up.');return;}
-  const d={version:4,trades,rules,exported:new Date().toISOString()};
+  const d={
+    version:5,
+    exported:new Date().toISOString(),
+    trades,
+    rules,
+    rulesData,
+    psySt,
+    pmSt,
+    philSt,
+    drReviews,
+    lrnData,
+    lrnLearnings,
+    intelSt,
+    scSyms,
+    lpBooks: lpBooks || [],
+    lpSites: lpSites || [],
+    lpMentors: lpMentors || [],
+    pmClChecked,
+  };
   const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='zen-journal-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('Backed up.');
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='zen-journal-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('Full backup saved.');
 }
 function importJSON(e){
   const file=e.target.files[0];if(!file)return;
   const r=new FileReader();
-  r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.trades){trades=d.trades;saveTrades();}if(d.rules){rules=d.rules;saveRules();}renderDash();renderRules();toast('Restored.');}catch{toast('Could not read file.');}};
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(d.trades){trades=d.trades;saveTrades();}
+      if(d.rules){rules=d.rules;saveRules();}
+      if(d.rulesData){rulesData=d.rulesData;saveRules2();}
+      if(d.psySt){psySt=d.psySt;lss('zj4_psy',psySt);}
+      if(d.pmSt){pmSt=d.pmSt;lss('zj4_pm',pmSt);}
+      if(d.philSt){philSt=d.philSt;lss('zj4_phil',philSt);}
+      if(d.drReviews){drReviews=d.drReviews;lss('zj4_dr',drReviews);}
+      if(d.lrnData){lrnData=d.lrnData;lss('zj4_lrn',lrnData);}
+      if(d.lrnLearnings){lrnLearnings=d.lrnLearnings;lss('zj4_learnings',lrnLearnings);}
+      if(d.intelSt){intelSt=d.intelSt;lss('zj4_intel',intelSt);}
+      if(d.scSyms){scSyms=d.scSyms;lss('zj4_sc',scSyms);}
+      if(d.lpBooks){lpBooks=d.lpBooks;lss('zj4_lp_books',lpBooks);}
+      if(d.lpSites){lpSites=d.lpSites;lss('zj4_lp_sites',lpSites);}
+      if(d.lpMentors){lpMentors=d.lpMentors;lss('zj4_lp_mentors',lpMentors);}
+      if(d.pmClChecked){pmClChecked=d.pmClChecked;pmClSave();}
+      renderDash();renderRules();
+      toast('Restored successfully.');
+    }catch{toast('Could not read file.');}
+  };
   r.readAsText(file);e.target.value='';
 }
 
@@ -7634,7 +7658,7 @@ function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('on'
    KEYBOARD
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeEntry();closeDetail();closeApiSettings();}
+  if(e.key==='Escape'){closeEntry();closeDetail();closeApiSettings();closeReadme();closeUserFlow();}
   if((e.metaKey||e.ctrlKey)&&e.key==='Enter')saveTrade();
   if(e.key==='n'&&!e.metaKey&&!e.ctrlKey&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA')openEntry();
 });
@@ -8022,304 +8046,154 @@ async function cAIAnalyse() {
   if (btn) { btn.disabled = false; btn.textContent = '✦ Analyse →'; }
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   PWA  —  platform-aware install UX
-   
-   REALITY: A single .html file cannot trigger
-   Chrome's beforeinstallprompt reliably because
-   the manifest needs a real same-origin URL.
-   
-   STRATEGY:
-   1. Show a prominent manual install modal on 
-      first visit, tailored per platform.
-   2. ALSO intercept beforeinstallprompt if it 
-      fires (e.g. file hosted on HTTPS server).
-   3. Keep all offline/SW/meta infra for when
-      the file IS hosted properly.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-(function() {
-
-  /* ─── Platform detection ─── */
-  var ua = navigator.userAgent;
-  var isIOS       = /iphone|ipad|ipod/i.test(ua);
-  var isAndroid   = /android/i.test(ua);
-  var isSamsung   = /samsungbrowser/i.test(ua);
-  var isFirefox   = /firefox/i.test(ua) && !isIOS;
-  var isChrome    = /chrome/i.test(ua) && !/edge|edg\//i.test(ua) && !isSamsung;
-  var isEdge      = /edge|edg\//i.test(ua);
-  var isMacSafari = /^((?!chrome|android).)*safari/i.test(ua) && !isIOS;
-  var isDesktop   = !isIOS && !isAndroid;
-  var isStandalone = (window.navigator.standalone === true) ||
-                     window.matchMedia('(display-mode: standalone)').matches;
-
-  /* ─── Don't show if already installed ─── */
-  if (isStandalone) return;
-
-  /* ─── Don't show if dismissed within 7 days ─── */
-  var DISMISS_KEY = 'zj_install_dismissed';
-  try {
-    var ts = parseInt(localStorage.getItem(DISMISS_KEY) || '0');
-    if (ts && (Date.now() - ts) < 7 * 24 * 60 * 60 * 1000) return;
-  } catch(e) {}
-
-  /* ─── Per-platform instructions ─── */
-  function getInstructions() {
-    if (isIOS) return {
-      title: 'Install on iPhone / iPad',
-      icon: '📲',
-      steps: [
-        '<span class="pi-step-icon">1</span> Tap the <strong>Share</strong> button <span class="pi-share-icon">⎙</span> at the bottom of Safari',
-        '<span class="pi-step-icon">2</span> Scroll down and tap <strong>"Add to Home Screen"</strong> <span style="font-size:13px">＋</span>',
-        '<span class="pi-step-icon">3</span> Tap <strong>"Add"</strong> — Zen Journal appears on your home screen'
-      ],
-      note: 'Must use <strong>Safari</strong>. Chrome/Firefox on iOS cannot install web apps.',
-      showArrow: true
-    };
-    if (isSamsung) return {
-      title: 'Install on Samsung Browser',
-      icon: '📲',
-      steps: [
-        '<span class="pi-step-icon">1</span> Tap the <strong>Menu</strong> button (three lines) at the bottom',
-        '<span class="pi-step-icon">2</span> Tap <strong>"Add page to"</strong>',
-        '<span class="pi-step-icon">3</span> Choose <strong>"Home screen"</strong>'
-      ],
-      note: 'For the best experience, use <strong>Samsung Internet Browser</strong>.'
-    };
-    if (isAndroid && isChrome) return {
-      title: 'Install on Android',
-      icon: '📲',
-      steps: [
-        '<span class="pi-step-icon">1</span> Tap the <strong>⋮ menu</strong> (top-right of Chrome)',
-        '<span class="pi-step-icon">2</span> Tap <strong>"Add to Home screen"</strong>',
-        '<span class="pi-step-icon">3</span> Tap <strong>"Add"</strong> to confirm'
-      ],
-      note: 'Works offline once installed. Your data is always saved locally.'
-    };
-    if (isAndroid && isFirefox) return {
-      title: 'Install on Android (Firefox)',
-      icon: '📲',
-      steps: [
-        '<span class="pi-step-icon">1</span> Tap the <strong>⋮ menu</strong> (top-right)',
-        '<span class="pi-step-icon">2</span> Tap <strong>"Install"</strong> or <strong>"Add to Home screen"</strong>'
-      ],
-      note: 'For full PWA support on Android, Chrome is recommended.'
-    };
-    if (isEdge) return {
-      title: 'Install as Desktop App (Edge)',
-      icon: '🖥️',
-      steps: [
-        '<span class="pi-step-icon">1</span> Click the <strong>⋯ menu</strong> (top-right of Edge)',
-        '<span class="pi-step-icon">2</span> Click <strong>"Apps"</strong>',
-        '<span class="pi-step-icon">3</span> Click <strong>"Install this site as an app"</strong>'
-      ],
-      note: 'Runs as a standalone window — no browser chrome.'
-    };
-    if (isMacSafari) return {
-      title: 'Install on Mac (Safari)',
-      icon: '🖥️',
-      steps: [
-        '<span class="pi-step-icon">1</span> Click <strong>File</strong> in the menu bar',
-        '<span class="pi-step-icon">2</span> Click <strong>"Add to Dock"</strong>'
-      ],
-      note: 'Requires macOS Sonoma (14) or later with Safari 17+.'
-    };
-    if (isDesktop && isChrome) return {
-      title: 'Install as Desktop App',
-      icon: '🖥️',
-      steps: [
-        '<span class="pi-step-icon">1</span> Look for the <strong>install icon</strong> <span style="font-size:13px">⊕</span> in the address bar',
-        '<span class="pi-step-icon">2</span> Click it and choose <strong>"Install"</strong>',
-        '<span class="pi-step-icon">3</span> Or: Chrome menu <strong>⋮</strong> → <strong>"Cast, save, and share"</strong> → <strong>"Install page as app"</strong>'
-      ],
-      note: 'Requires the file to be served over HTTPS or localhost.'
-    };
-    /* Generic fallback */
-    return {
-      title: 'Add to Home Screen',
-      icon: '📲',
-      steps: [
-        '<span class="pi-step-icon">1</span> Open your browser\'s <strong>menu</strong>',
-        '<span class="pi-step-icon">2</span> Look for <strong>"Add to Home Screen"</strong> or <strong>"Install App"</strong>',
-        '<span class="pi-step-icon">3</span> Confirm the installation'
-      ],
-      note: 'Works best in Chrome (Android/Desktop) or Safari (iOS).'
-    };
-  }
-
-  /* ─── Inject modal styles ─── */
-  function injectStyles() {
-    if (document.getElementById('pi-styles')) return;
-    var s = document.createElement('style');
-    s.id = 'pi-styles';
-    s.textContent = [
-      '@keyframes pi-in{from{opacity:0;transform:translateY(40px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}',
-      '@keyframes pi-bg-in{from{opacity:0}to{opacity:1}}',
-      '@keyframes pi-bounce{0%,100%{transform:translateY(0)}60%{transform:translateY(6px)}}',
-      '#pi-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.82);backdrop-filter:blur(12px);z-index:10000;display:flex;align-items:flex-end;justify-content:center;padding:0;animation:pi-bg-in 0.2s ease}',
-      '#pi-overlay.pi-desktop{align-items:center;padding:20px}',
-      '#pi-box{background:#0c0c14;border:1px solid rgba(212,168,71,0.22);border-radius:14px 14px 0 0;width:100%;max-width:480px;padding:28px 24px 36px;position:relative;animation:pi-in 0.35s cubic-bezier(0.16,1,0.3,1)}',
-      '#pi-overlay.pi-desktop #pi-box{border-radius:10px;max-width:420px;padding:28px 26px 26px}',
-      '.pi-handle{width:36px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin:0 auto 20px}',
-      '.pi-icon{font-size:32px;margin-bottom:10px;text-align:center}',
-      '.pi-title{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:500;color:#f0c96a;letter-spacing:0.06em;text-align:center;margin-bottom:20px;text-transform:uppercase}',
-      '.pi-steps{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}',
-      '.pi-step{display:flex;align-items:flex-start;gap:10px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:#8888a8;line-height:1.65}',
-      '.pi-step strong{color:#cccce0}',
-      '.pi-step-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:rgba(212,168,71,0.12);border:1px solid rgba(212,168,71,0.25);color:#d4a847;font-size:9px;font-weight:600;flex-shrink:0;margin-top:2px}',
-      '.pi-share-icon{display:inline-block;font-size:14px;color:#cccce0;vertical-align:middle}',
-      '.pi-note{font-family:"IBM Plex Mono",monospace;font-size:9.5px;color:#5a5a78;line-height:1.6;text-align:center;margin-bottom:20px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:4px}',
-      '.pi-note strong{color:#8888a8}',
-      '.pi-arrow{text-align:center;font-size:24px;color:rgba(212,168,71,0.5);margin-top:4px;animation:pi-bounce 1.4s infinite}',
-      '.pi-dismiss{width:100%;background:rgba(212,168,71,0.08);border:1px solid rgba(212,168,71,0.2);color:#d4a847;font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;padding:12px;border-radius:6px;cursor:pointer;transition:background 0.15s}',
-      '.pi-dismiss:hover{background:rgba(212,168,71,0.15)}',
-      '.pi-close{position:absolute;top:16px;right:18px;background:none;border:none;color:#5a5a78;font-size:22px;cursor:pointer;line-height:1;transition:color 0.12s;padding:0}',
-      '.pi-close:hover{color:#cccce0}',
-      '.pi-native-btn{width:100%;background:#d4a847;border:none;color:#060609;font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:13px;border-radius:6px;cursor:pointer;margin-bottom:10px;transition:background 0.15s}',
-      '.pi-native-btn:hover{background:#f0c96a}',
-    ].join('');
-    document.head.appendChild(s);
-  }
-
-  /* ─── Build and show modal ─── */
-  function showInstallModal(nativePrompt) {
-    if (document.getElementById('pi-overlay')) return;
-    injectStyles();
-    var inst = getInstructions();
-
-    var overlay = document.createElement('div');
-    overlay.id = 'pi-overlay';
-    if (isDesktop) overlay.classList.add('pi-desktop');
-
-    var stepsHTML = inst.steps.map(function(s) {
-      return '<div class="pi-step">' + s + '</div>';
-    }).join('');
-
-    var arrowHTML = (inst.showArrow && isIOS)
-      ? '<div class="pi-arrow">↓</div>'
-      : '';
-
-    var nativeBtnHTML = nativePrompt
-      ? '<button class="pi-native-btn" id="pi-native-btn">📲 Install Now (One Tap)</button>'
-      : '';
-
-    overlay.innerHTML =
-      '<div id="pi-box">' +
-        (isIOS ? '<div class="pi-handle"></div>' : '') +
-        '<button class="pi-close" aria-label="Close" onclick="window._piClose()">×</button>' +
-        '<div class="pi-icon">' + inst.icon + '</div>' +
-        '<div class="pi-title">' + inst.title + '</div>' +
-        nativeBtnHTML +
-        '<div class="pi-steps">' + stepsHTML + '</div>' +
-        (inst.note ? '<div class="pi-note">' + inst.note + '</div>' : '') +
-        arrowHTML +
-        '<button class="pi-dismiss" onclick="window._piClose()">Got it — close</button>' +
-      '</div>';
-
-    document.body.appendChild(overlay);
-
-    /* Close on backdrop click */
-    overlay.addEventListener('click', function(e) {
-      if (e.target === overlay) window._piClose();
-    });
-
-    /* Wire native install button if available */
-    if (nativePrompt) {
-      var btn = document.getElementById('pi-native-btn');
-      if (btn) btn.addEventListener('click', function() {
-        nativePrompt.prompt();
-        nativePrompt.userChoice.then(function(r) {
-          if (r.outcome === 'accepted') window._piClose(true);
-        });
-      });
-    }
-  }
-
-  window._piClose = function(installed) {
-    var el = document.getElementById('pi-overlay');
-    if (el) el.remove();
-    try {
-      if (!installed) localStorage.setItem(DISMISS_KEY, Date.now().toString());
-    } catch(e) {}
-  };
-
-  /* ─── Intercept native prompt if available (HTTPS + valid manifest) ─── */
-  var _nativePrompt = null;
-  window.addEventListener('beforeinstallprompt', function(e) {
-    e.preventDefault();
-    _nativePrompt = e;
-    /* If modal is already open, inject native button */
-    var box = document.getElementById('pi-box');
-    if (box && !document.getElementById('pi-native-btn')) {
-      var btn = document.createElement('button');
-      btn.className = 'pi-native-btn';
-      btn.id = 'pi-native-btn';
-      btn.textContent = '📲 Install Now (One Tap)';
-      btn.addEventListener('click', function() {
-        e.prompt();
-        e.userChoice.then(function(r) {
-          if (r.outcome === 'accepted') window._piClose(true);
-        });
-      });
-      box.insertBefore(btn, box.querySelector('.pi-steps'));
-    }
-  });
-
-  window.addEventListener('appinstalled', function() {
-    window._piClose(true);
-    try { if (typeof toast === 'function') toast('✓ Zen Journal installed!'); } catch(e) {}
-  });
-
-  /* ─── Show on first visit (short delay so page renders first) ─── */
-  setTimeout(function() {
-    showInstallModal(_nativePrompt);
-  }, 1200);
-
-  /* ─── Service Worker (for when file IS hosted on HTTPS) ─── */
-  if ('serviceWorker' in navigator && !isIOS) {
-    var swCode = [
-      'var C="zen-v1";',
-      'self.addEventListener("install",function(e){self.skipWaiting();',
-      '  e.waitUntil(caches.open(C).then(function(c){',
-      '    return fetch("./").then(function(r){return c.put("./",r);}).catch(function(){});',
-      '  }));',
-      '});',
-      'self.addEventListener("activate",function(e){',
-      '  e.waitUntil(caches.keys().then(function(ks){',
-      '    return Promise.all(ks.filter(function(k){return k!==C;}).map(function(k){return caches.delete(k);}));',
-      '  }).then(function(){return self.clients.claim();}));',
-      '});',
-      'self.addEventListener("fetch",function(e){',
-      '  var u=e.request.url;',
-      '  if(u.includes("api.anthropic")||u.includes("fonts.googleapis")||u.includes("fonts.gstatic")){',
-      '    e.respondWith(fetch(e.request).catch(function(){return new Response("",{status:503});}));',
-      '    return;',
-      '  }',
-      '  e.respondWith(caches.match(e.request).then(function(cached){',
-      '    var fresh=fetch(e.request).then(function(r){',
-      '      if(r&&r.status===200&&r.type!=="opaque"){var cl=r.clone();caches.open(C).then(function(c){c.put(e.request,cl);});}',
-      '      return r;',
-      '    }).catch(function(){return caches.match("./");});',
-      '    return cached||fresh;',
-      '  }));',
-      '});'
-    ].join('\n');
-
-    try {
-      var swBlob = new Blob([swCode], { type: 'application/javascript' });
-      navigator.serviceWorker.register(URL.createObjectURL(swBlob), { scope: './' })
-        .catch(function(e){ console.warn('[PWA] SW:', e.message); });
-    } catch(e) {}
-  }
-
-  /* ─── Offline / online notifications ─── */
-  window.addEventListener('offline', function() {
-    try { if (typeof toast === 'function') toast('⚠ Offline — data saved locally'); } catch(e) {}
-  });
-  window.addEventListener('online', function() {
-    try { if (typeof toast === 'function') toast('✓ Back online'); } catch(e) {}
-  });
-
-})();
 </script>
+
+<!-- ── README MODAL ── -->
+<div id="readme-overlay" class="overlay" onclick="if(event.target===this)closeReadme()">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-h">
+      <div class="modal-title">Readme</div>
+      <button class="modal-x" onclick="closeReadme()">✕</button>
+    </div>
+    <div class="modal-b" style="line-height:1.85">
+      <div style="font-family:var(--g);font-size:22px;font-style:italic;color:var(--amber2);margin-bottom:6px">Zen Journal — Trading Performance System</div>
+      <div style="font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--dim);margin-bottom:20px">Version 1.0 · Single-file · Zero backend · Runs entirely in your browser</div>
+
+      <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.15em;color:var(--dim);margin-bottom:8px">What is Zen Journal?</div>
+      <div style="font-size:11px;color:var(--text);margin-bottom:18px">A comprehensive, dark-mode trading journal and analytics platform that lives in a single HTML file. All data is stored in your browser's <code style="background:var(--lift);padding:1px 5px;border-radius:2px;font-size:10px">localStorage</code> — nothing is ever sent to a server. The optional AI features require an Anthropic API key, which you set once via <strong style="color:var(--amber2)">⚙ API</strong> in the top bar.</div>
+
+      <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.15em;color:var(--dim);margin-bottom:8px">Core Modules</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px">
+        <div style="background:var(--lift);border:1px solid var(--rule);border-radius:3px;padding:12px">
+          <div style="font-size:9px;font-weight:500;color:var(--amber2);margin-bottom:5px">📊 Overview</div>
+          <div style="font-size:10px;color:var(--dim);line-height:1.65">Dashboard with equity curve, P&L heatmap, streak tracker, monthly breakdown, and recent trades at a glance.</div>
+        </div>
+        <div style="background:var(--lift);border:1px solid var(--rule);border-radius:3px;padding:12px">
+          <div style="font-size:9px;font-weight:500;color:var(--amber2);margin-bottom:5px">🌅 Pre-Market</div>
+          <div style="font-size:10px;color:var(--dim);line-height:1.65">Mental state check, bias watchlist, news notes, and intention setting before each session. Supports Intraday, Swing, and Investment rule sets.</div>
+        </div>
+        <div style="background:var(--lift);border:1px solid var(--rule);border-radius:3px;padding:12px">
+          <div style="font-size:9px;font-weight:500;color:var(--amber2);margin-bottom:5px">📓 Trades</div>
+          <div style="font-size:10px;color:var(--dim);line-height:1.65">Full trade log with P&L, R-multiple, setup tags, lessons, and quality ratings. Sort, filter, and search across your history.</div>
+        </div>
+        <div style="background:var(--lift);border:1px solid var(--rule);border-radius:3px;padding:12px">
+          <div style="font-size:9px;font-weight:500;color:var(--amber2);margin-bottom:5px">📏 Rules</div>
+          <div style="font-size:10px;color:var(--dim);line-height:1.65">Your personal trading constitution — entry, exit, risk, and psychological rules. Displayed at trade entry as a live checklist.</div>
+        </div>
+        <div style="background:var(--lift);border:1px solid var(--rule);border-radius:3px;padding:12px">
+          <div style="font-size:9px;font-weight:500;color:var(--amber2);margin-bottom:5px">🧠 Decision Engine</div>
+          <div style="font-size:10px;color:var(--dim);line-height:1.65">Pre-trade scoring system (0–100) that checks R:R, stop logic, regime, setup quality, and psychological state. Optional Claude AI deep-analysis.</div>
+        </div>
+        <div style="background:var(--lift);border:1px solid var(--rule);border-radius:3px;padding:12px">
+          <div style="font-size:9px;font-weight:500;color:var(--amber2);margin-bottom:5px">🧘 Psychology & Philosophy</div>
+          <div style="font-size:10px;color:var(--dim);line-height:1.65">Daily mood & confidence sliders, cognitive bias tracker, Stoic quotes, mental models table, and principles library.</div>
+        </div>
+        <div style="background:var(--lift);border:1px solid var(--rule);border-radius:3px;padding:12px">
+          <div style="font-size:9px;font-weight:500;color:var(--amber2);margin-bottom:5px">📡 Market Intel / Screener / News</div>
+          <div style="font-size:10px;color:var(--dim);line-height:1.65">Live market data, pre-market movers, economic calendar, watchlist, stock screener, and a curated news feed — all powered by free APIs.</div>
+        </div>
+        <div style="background:var(--lift);border:1px solid var(--rule);border-radius:3px;padding:12px">
+          <div style="font-size:9px;font-weight:500;color:var(--amber2);margin-bottom:5px">🎓 Learning Hub</div>
+          <div style="font-size:10px;color:var(--dim);line-height:1.65">Curated trading books with key concepts, mentor profiles, video resources, and a personal learnings notebook.</div>
+        </div>
+      </div>
+
+      <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.15em;color:var(--dim);margin-bottom:8px">Data & Privacy</div>
+      <div style="font-size:11px;color:var(--text);margin-bottom:18px">All trades, rules, notes, and settings are saved locally in your browser's <code style="background:var(--lift);padding:1px 5px;border-radius:2px;font-size:10px">localStorage</code>. Use <strong style="color:var(--amber2)">Backup</strong> (top-right) to export a JSON snapshot, and <strong style="color:var(--amber2)">Restore</strong> to import it on another device. Your Anthropic API key is stored locally and never logged.</div>
+
+      <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.15em;color:var(--dim);margin-bottom:8px">API Key Setup (Optional)</div>
+      <div style="font-size:11px;color:var(--text)">Click <strong style="color:var(--amber2)">⚙ API</strong> in the top bar → paste your Anthropic API key. This unlocks AI-powered analysis in the Decision Engine and Confirmation sections. You can get a key at <span style="color:var(--cyan)">console.anthropic.com</span>.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── USER FLOW MODAL ── -->
+<div id="userflow-overlay" class="overlay" onclick="if(event.target===this)closeUserFlow()">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-h">
+      <div class="modal-title">User Flow &amp; Manual</div>
+      <button class="modal-x" onclick="closeUserFlow()">✕</button>
+    </div>
+    <div class="modal-b" style="line-height:1.85">
+
+      <div style="font-family:var(--g);font-size:18px;font-style:italic;color:var(--text);margin-bottom:4px">Your Daily Workflow</div>
+      <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:24px">Follow this sequence each trading day for maximum benefit</div>
+
+      <!-- Step 1 -->
+      <div style="display:flex;gap:14px;margin-bottom:20px">
+        <div style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:rgba(212,168,71,0.12);border:1px solid rgba(212,168,71,0.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--amber2)">1</div>
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:4px">🌅 Morning — Pre-Market Ritual</div>
+          <div style="font-size:11px;color:var(--dim);line-height:1.7">Open <strong style="color:var(--amber2)">Pre-Market</strong>. Rate your mental state, check your biases, and read the news summary. Set your single intention for the day. Choose your trade type (Intraday / Swing / Investing) to filter the relevant rule set. Tick through the checklist before placing any trades.</div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div style="display:flex;gap:14px;margin-bottom:20px">
+        <div style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:rgba(212,168,71,0.12);border:1px solid rgba(212,168,71,0.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--amber2)">2</div>
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:4px">🧠 Before Each Trade — Decision Engine</div>
+          <div style="font-size:11px;color:var(--dim);line-height:1.7">Before entering a position, go to <strong style="color:var(--amber2)">Decision</strong>. Fill in the symbol, direction, entry, stop, and target. Select your setup type and market regime. Click <strong style="color:var(--text)">Score Trade</strong> — a score of 70+ is generally a GO. Review the checklist flags. For deeper analysis, click <strong style="color:var(--text)">✦ Analyse →</strong> (requires API key).</div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div style="display:flex;gap:14px;margin-bottom:20px">
+        <div style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:rgba(212,168,71,0.12);border:1px solid rgba(212,168,71,0.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--amber2)">3</div>
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:4px">✅ Confirmation Check</div>
+          <div style="font-size:11px;color:var(--dim);line-height:1.7">Visit <strong style="color:var(--amber2)">Confirmation</strong> to verify all your rules are satisfied: entry criteria met, stop is defined, R:R is acceptable, position size is calculated, and your thesis is written out. Do not skip this step.</div>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div style="display:flex;gap:14px;margin-bottom:20px">
+        <div style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:rgba(212,168,71,0.12);border:1px solid rgba(212,168,71,0.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--amber2)">4</div>
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:4px">📓 After Each Trade — Log It</div>
+          <div style="font-size:11px;color:var(--dim);line-height:1.7">Click <strong style="color:var(--amber2)">+ Log Trade</strong> in the top-right corner. Fill in the symbol, direction, entry, exit, P&L, and R-multiple. Tag the setup type, select your rating (1–5), and — most importantly — write a <strong style="color:var(--text)">lesson</strong>. Even profitable trades have lessons.</div>
+        </div>
+      </div>
+
+      <!-- Step 5 -->
+      <div style="display:flex;gap:14px;margin-bottom:20px">
+        <div style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:rgba(212,168,71,0.12);border:1px solid rgba(212,168,71,0.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--amber2)">5</div>
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:4px">🌆 End of Session — Daily Review &amp; Psychology</div>
+          <div style="font-size:11px;color:var(--dim);line-height:1.7">Open <strong style="color:var(--amber2)">Daily Review</strong> to rate your rule adherence, log what went well, and document mistakes. Then visit <strong style="color:var(--amber2)">Psychology</strong> to update your confidence and discipline sliders and note any cognitive biases that showed up today.</div>
+        </div>
+      </div>
+
+      <!-- Step 6 -->
+      <div style="display:flex;gap:14px;margin-bottom:28px">
+        <div style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:rgba(212,168,71,0.12);border:1px solid rgba(212,168,71,0.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--amber2)">6</div>
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:4px">📊 Weekly — Review Your Analytics</div>
+          <div style="font-size:11px;color:var(--dim);line-height:1.7">Use <strong style="color:var(--amber2)">Overview</strong> to review your equity curve and P&L heatmap. Check <strong style="color:var(--amber2)">Trades</strong> and sort by setup type to identify your edge. Update your <strong style="color:var(--amber2)">Rules</strong> if patterns emerge. Back up your data with the <strong style="color:var(--text)">Backup</strong> button.</div>
+        </div>
+      </div>
+
+      <div style="background:rgba(212,168,71,0.05);border:1px solid rgba(212,168,71,0.18);border-radius:3px;padding:14px 16px">
+        <div style="font-size:9px;text-transform:uppercase;letter-spacing:0.14em;color:var(--amber2);margin-bottom:7px">💡 Pro Tips</div>
+        <div style="font-size:11px;color:var(--dim);line-height:1.85">
+          · Always complete the <strong style="color:var(--text)">Decision Engine</strong> before entering — even 30 seconds of friction prevents revenge trades.<br>
+          · The <strong style="color:var(--text)">Lesson</strong> field is the most important field in the trade log. Write something specific.<br>
+          · Use <strong style="color:var(--text)">Market Intel → Screener</strong> for your watchlist; add names before the market opens.<br>
+          · Tag your <strong style="color:var(--text)">Setup</strong> consistently — after 30 trades the per-setup win rate data becomes actionable.<br>
+          · The <strong style="color:var(--text)">Learning</strong> section houses curated books and mentors; revisit weekly for perspective.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function openReadme(){document.getElementById('readme-overlay').classList.add('on')}
+function closeReadme(){document.getElementById('readme-overlay').classList.remove('on')}
+function openUserFlow(){document.getElementById('userflow-overlay').classList.add('on')}
+function closeUserFlow(){document.getElementById('userflow-overlay').classList.remove('on')}
+</script>
+
 </body>
 </html>
